@@ -360,10 +360,15 @@ static void LimitChassisOutput()
     // referee_data->PowerHeatData.chassis_power_buffer;
 
     // 完成功率限制后进行电机参考输入设定
-    DJIMotorSetRef(motor_lf, vt_lf);
-    DJIMotorSetRef(motor_rf, vt_rf);
-    DJIMotorSetRef(motor_lb, vt_lb);
-    DJIMotorSetRef(motor_rb, vt_rb);
+    DJIMotorSetRef(First_GM6020_motor, (float)(chassis_handle.motor_set_steer[0])  + Init_angle[0] );
+    DJIMotorSetRef(Second_GM6020_motor, (float)(chassis_handle.motor_set_steer[1]) + Init_angle[1]);
+    DJIMotorSetRef(Third_GM6020_motor, (float)(chassis_handle.motor_set_steer[2])  + Init_angle[2]);
+    DJIMotorSetRef(Fourth_GM6020_motor, (float)(chassis_handle.motor_set_steer[3]) + Init_angle[3]);
+
+    DJIMotorSetRef(First_M3508_motor, chassis_handle.motor_set_speed[0]);
+    DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
+    DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
+    DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
 }
 
 /**
@@ -376,15 +381,7 @@ static void EstimateSpeed()
     // 根据电机速度和陀螺仪的角速度进行解算,还可以利用加速度计判断是否打滑(如果有)
     // chassis_feedback_data.vx vy wz =
     //  ...
-    DJIMotorSetRef(First_GM6020_motor, (float)(chassis_handle.motor_set_steer[0])  + Init_angle[0] );
-    DJIMotorSetRef(Second_GM6020_motor, (float)(chassis_handle.motor_set_steer[1]) + Init_angle[1]);
-    DJIMotorSetRef(Third_GM6020_motor, (float)(chassis_handle.motor_set_steer[2])  + Init_angle[2]);
-    DJIMotorSetRef(Fourth_GM6020_motor, (float)(chassis_handle.motor_set_steer[3]) + Init_angle[3]);
 
-    DJIMotorSetRef(First_M3508_motor, chassis_handle.motor_set_speed[0]);
-    DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
-    DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
-    DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
 }
 /**
  * @brief 传递遥控器参数
@@ -524,7 +521,8 @@ void ChassisTask()
 
     // SetPowerLimit(referee_data->GameRobotState.chassis_power_limit);//设置功率限制
     if (chassis_cmd_recv.chassis_mode == CHASSIS_ZERO_FORCE)
-    { // 如果出现重要模块离线或遥控器设置为急停,让电机停止
+    { 
+    // 如果出现重要模块离线或遥控器设置为急停,让电机停止
     DJIMotorStop(First_GM6020_motor);
     DJIMotorStop(Second_GM6020_motor);
     DJIMotorStop(Third_GM6020_motor);
@@ -568,14 +566,16 @@ void ChassisTask()
     static float sin_theta, cos_theta;
     cos_theta = arm_cos_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
     sin_theta = arm_sin_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
-    chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
-    chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+    // chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
+    // chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+
+    ChassisHandle_Deliver_Config();
 
     // 根据控制模式进行运动学解算,计算底盘输出
     Steer_Chassis_Control(&chassis_handle);
 
     // 根据裁判系统的反馈数据和电容数据对输出限幅并设定闭环参考值
-    // LimitChassisOutput();
+    LimitChassisOutput();
 
     // 根据电机的反馈速度和IMU(如果有)计算真实速度
     EstimateSpeed();
