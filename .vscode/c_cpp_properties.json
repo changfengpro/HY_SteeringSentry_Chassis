@@ -1,25 +1,19 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/Modules/remote",
-                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "${workspaceFolder}/Application",
-                "${workspaceFolder}/Core/Inc",
-                "${workspaceFolder}/Bsp/dwt",
-                "${workspaceFolder}/Modules",
-                "${workspaceFolder}/Application/chassis",
-                "${workspaceFolder}/Modules/imu",
-                "${workspaceFolder}/Modules/motor/DJImotor"
+                "${workspaceFolder}/**"
             ],
-            "defines": [],
-            "compilerPath": null,
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
             "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "windows-gcc-x86",
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4

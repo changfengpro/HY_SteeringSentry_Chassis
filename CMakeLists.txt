@@ -1,120 +1,115 @@
-cmake_minimum_required(VERSION 3.22)
-
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
-
-# Setup compiler settings
+cmake_minimum_required(VERSION 3.16)
+# 指定编译平台/架构与语言标准, 推荐指定Ninja为构建工具,可以加快编译速度(相比make)
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+# 指定工具链
+set(CMAKE_C_COMPILER_FORCED TRUE) # skip compiler test
+set(CMAKE_CXX_COMPILER_FORCED TRUE)
+set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
+set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
+set(CMAKE_OBJDUMP arm-none-eabi-objdump)
+set(SIZE arm-none-eabi-size) 
+set(CMAKE_AR arm-none-eabi-ar)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
+# 指定工程名称和语言类型
+project(basic_framework C ASM) 
 
-# Define the build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
-endif()
+# 选择构建类型
+set(CMAKE_BUILD_TYPE Debug) # Debug Release RelWithDebInfo MinSizeRel
 
-# Set the project name
-set(CMAKE_PROJECT_NAME sentry)
+# board specific settings, arch/fpu/instruction
+set(MCU_FLAGS -mcpu=cortex-m4 -mthumb -mthumb-interwork -mfloat-abi=hard -mfpu=fpv4-sp-d16)
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/STM32F407IGHx_FLASH.ld") # 指定链接脚本
+set(DSP_NAME "libCMSISDSP.a") # 指定DSP库名称
+link_directories(${CMAKE_SOURCE_DIR}/Middlewares/ST/ARM/DSP/Lib)
 
-# Include toolchain file
-include("cmake/gcc-arm-none-eabi.cmake")
+# Generic compiler settings for optimization and basic link lib
+add_compile_options(-pipe ${MCU_FLAGS} -Wall -Werror -fmessage-length=0 # basic options
+                    -ffunction-sections -fdata-sections -fno-common # optimize options 
+                    )
+add_link_options(-pipe ${MCU_FLAGS} -T${LINKER_SCRIPT} -Wl,--no-warn-rwx-segments # close RWX warning
+                 -lm -lc -lnosys # lib options
+                 -Wl,--gc-sections -flto -specs=nano.specs -specs=nosys.specs # optimize options
+                 -Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map -Wl,--cref -Wl,--print-memory-usage # map options
+                 ) # if your executable is too large , try option '-s' to strip symbols
 
-# Enable compile command to ease indexing with e.g. clangd
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+# add_compile_definitions() works for compile stage
+# while add_definitions() works for both compile and link stage
+add_definitions(
+    -DUSE_HAL_DRIVER 
+    -DSTM32F407xx 
+    -DARM_MATH_CM4 
+    ) # need -D<macro> to define macro
 
-# Enable CMake support for ASM and C languages
-enable_language(C ASM)
-
-# Core project settings
-project(${CMAKE_PROJECT_NAME})
-message("Build type: " ${CMAKE_BUILD_TYPE})
-
-# Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME})
-
-# Add STM32CubeMX generated sources
-add_subdirectory(cmake/stm32cubemx)
-
-# Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-)
-
-# Add sources to executable
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-)
-
-# 源文件编译
-# Add sources to executable
-file(GLOB_RECURSE BSP_SOURCES "Bsp/*.c")
-file(GLOB_RECURSE APPLICATION_SOURCES "Application/*.c")
-file(GLOB_RECURSE MODULES_SOURCES "Modules/*.c")
-
-
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${BSP_SOURCES} ${APPLICATION_SOURCES} ${MODULES_SOURCES})
-
-
-# 头文件包含
-# Gather all unique directories for BSP, SEGGER, and Modules headers
-file(GLOB_RECURSE BSP_INCLUDES "Bsp/*.h")
-file(GLOB_RECURSE APPLICATION_INCLUDES "Application/*.h")
-file(GLOB_RECURSE MODULES_INCLUDES "Modules/*.h")
-
-# 设置一个列表来保存唯一路径
-# Initialize a list to hold unique include directories
-set(INCLUDE_DIRS)
-
-# 提取路径
-# Function to extract unique directories from header files
-function(add_unique_directories HEADER_FILES)
-    # 检查传入的 HEADER_FILES 是否为空或未定义
-    if(NOT HEADER_FILES)
-        #message(STATUS "No headers found.")
-        return()
+# add inc
+# 递归包含头文件的函数
+function(include_sub_directories_recursively root_dir)
+    if (IS_DIRECTORY ${root_dir})               # 当前路径是一个目录吗，是的话就加入到包含目录
+        message("include dir: " ${root_dir})
+        include_directories(${root_dir})
     endif()
 
-    foreach(HEADER_PATH ${HEADER_FILES})
-        #message(STATUS "Found header: ${HEADER_PATH}")  # 打印找到的头文件路径
-        get_filename_component(DIR_PATH ${HEADER_PATH} DIRECTORY)
-        if(NOT DIR_PATH IN_LIST INCLUDE_DIRS)  # 检查路径是否已经在列表中
-            list(APPEND INCLUDE_DIRS ${DIR_PATH})
+    file(GLOB ALL_SUB RELATIVE ${root_dir} ${root_dir}/*) # 获得当前目录下的所有文件，让如ALL_SUB列表中
+    foreach(sub ${ALL_SUB})
+        if (IS_DIRECTORY ${root_dir}/${sub})
+            include_sub_directories_recursively(${root_dir}/${sub}) # 对子目录递归调用，包含
         endif()
-        #message(STATUS "INCLUDE_DIR NOW:${INCLUDE_DIRS}")
     endforeach()
-
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)  # 确保 INCLUDE_DIRS 在父作用域中可见
 endfunction()
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/Drivers)
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/Middlewares)
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/bsp)
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/modules)
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/application)
+include_sub_directories_recursively(${CMAKE_SOURCE_DIR}/Inc)
 
-# Extract directories for each set of headers
-# 提取每个头文件集的目录
-add_unique_directories("${BSP_INCLUDES}")
-add_unique_directories("${APPLICATION_INCLUDES}")
-add_unique_directories("${MODULES_INCLUDES}")
-
-# 打印最终的 include 目录
-message(STATUS "Final include directories: ${INCLUDE_DIRS}")
-
-
-# Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
-    ${INCLUDE_DIRS}
+# add source, only surfix .c
+file(GLOB_RECURSE SOURCES
+    "Drivers/*.c"
+    "Src/*.c"
+    "Middlewares/*.c"
+    "bsp/*.c"
+    "modules/*.c"
+    "application/*.c"
 )
 
-# Add project symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
-)
+# 汇编文件路径
+# ENABLE_LANGUAGE(ASM)
+set(ASM_SOURCES
+    startup_stm32f407xx.s
+    Middlewares/Third_Party/SEGGER/RTT/SEGGER_RTT_ASM_ARMv7M.s
+    )
+set_source_files_properties(${ASM_SOURCES} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp")
 
-# Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
+# Build types
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message(STATUS "Maximum optimization for speed")
+    add_compile_options(-Ofast)
+elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    message(STATUS "Maximum optimization for speed, debug info included")
+    add_compile_options(-Ofast -g)
+elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
+    message(STATUS "Maximum optimization for size")
+    add_compile_options(-Os)
+else ()
+    message(STATUS "Minimal optimization, debug info included")
+    add_compile_options(-Og -g -gdwarf-2)
+    add_definitions(-DESC_DEBUG) # ESC Debug
+endif ()
 
-    # Add user defined libraries
-)
+# build binary and hex file
+add_executable(${PROJECT_NAME}.elf  ${SOURCES} ${ASM_SOURCES} ${LINKER_SCRIPT})
+target_link_libraries(${PROJECT_NAME}.elf ${DSP_NAME} m) # link DSP lib and math lib
+
+add_custom_command(
+    TARGET ${PROJECT_NAME}.elf POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex
+    COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin
+    COMMENT "Building hex & bin file..."
+    COMMENT "EXCUTABLE SIZE:"
+    COMMAND ${SIZE} ${PROJECT_NAME}.elf
+  )
