@@ -178,7 +178,7 @@ static void RemoteControlSet()
         gimbal_cmd_send.pitch += 0.001f * (float)rc_data[TEMP].rc.rocker_l1;
     }
     // 云台软件限位
-
+    
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r_ / 1.5; // _水平方向
     chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r1 / 1.5; // 1数值方向

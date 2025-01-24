@@ -105,6 +105,8 @@ static void RCLostCallback(void *id)
 {
     memset(rc_ctrl, 0, sizeof(rc_ctrl)); // 清空遥控器数据
     USARTServiceInit(rc_usart_instance); // 尝试重新启动接收
+    rc_ctrl->rc.dial = 660;              // 遥控器断连之后将拨轮设置为-660，即设置为急停模式
+
     LOGWARNING("[rc] remote control lost");
 }
 

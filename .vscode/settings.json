@@ -15,6 +15,18 @@
         "bsp_log.h": "c",
         "power_control.h": "c",
         "robot_def.h": "c",
-        "bsp_usart.h": "c"
+        "bsp_usart.h": "c",
+        "bit": "c",
+        "compare": "c",
+        "cstddef": "c",
+        "string": "c",
+        "limits": "c",
+        "memory": "c",
+        "new": "c",
+        "functional": "c",
+        "general_def.h": "c",
+        "daemon.h": "c",
+        "referee_task.h": "c",
+        "bmi088.h": "c"
     }
 }
