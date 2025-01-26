@@ -17,7 +17,7 @@
 #include "super_cap.h"
 #include "message_center.h"
 #include "referee_task.h"
-
+#include "dmmotor.h"
 #include "general_def.h"
 #include "bsp_dwt.h"
 #include "referee_UI.h"
@@ -72,7 +72,8 @@ static void Steer_Chassis_Control(ChassisHandle_t *Chassis_hanlde);
 // first表示第一象限， second表示第二象限，以此类推
 static DJIMotorInstance *First_GM6020_motor, *Second_GM6020_motor, *Third_GM6020_motor, *Fourth_GM6020_motor, \
                         *First_M3508_motor,  *Second_M3508_motor,  *Third_M3508_motor,  *Fourth_M3508_motor;
-extern Chassis_Ctrl_Cmd_s chassis_cmd_send;
+static DMMotorInstance  *Gimbal_Base;
+// extern Chassis_Ctrl_Cmd_s chassis_cmd_send;
 ChassisHandle_t chassis_handle;
 
 void ChassisInit()
@@ -313,6 +314,21 @@ void ChassisInit()
         }
     };
 
+    Motor_Init_Config_s DMmotor_Motor_Config = {
+    .controller_setting_init_config.angle_feedback_source = MOTOR_FEED,
+    .controller_setting_init_config.close_loop_type = SPEED_LOOP,
+    .controller_setting_init_config.feedback_reverse_flag = FEEDBACK_DIRECTION_NORMAL,
+    .controller_setting_init_config.feedforward_flag = SPEED_FEEDFORWARD,
+    .controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
+    .controller_setting_init_config.outer_loop_type = SPEED_LOOP,
+    .controller_setting_init_config.speed_feedback_source = MOTOR_FEED,
+    .can_init_config.can_handle = &hcan1,
+    // .can_init_config.can_module_callback = &DMMotorLostCallback,
+    // .can_init_config.id = (void *)0x00,
+    .can_init_config.rx_id = 0x10,
+    .can_init_config.tx_id = 0x20F,
+    };
+
     First_GM6020_motor  = DJIMotorInit(&chassis_first_GM6020_motor_config);
     Second_GM6020_motor = DJIMotorInit(&chassis_second_GM6020_motor_config);
     Third_GM6020_motor  = DJIMotorInit(&chassis_third_GM6020_motor_config);
@@ -321,6 +337,8 @@ void ChassisInit()
     Second_M3508_motor  = DJIMotorInit(&chassis_second_M3508_motor_config);
     Third_M3508_motor   = DJIMotorInit(&chassis_third_M3508_motor_config);
     Fourth_M3508_motor  = DJIMotorInit(&chassis_fourth_M3508_motor_config);
+    Gimbal_Base         = DMMotorInit(&DMmotor_Motor_Config);
+
 
 
     ChassisHandle_Deliver_Config();
@@ -531,6 +549,7 @@ void ChassisTask()
     DJIMotorStop(Second_M3508_motor);
     DJIMotorStop(Third_M3508_motor);
     DJIMotorStop(Fourth_M3508_motor);
+    DMMotorStop(Gimbal_Base);
     }
     else
     { // 正常工作
@@ -542,6 +561,7 @@ void ChassisTask()
     DJIMotorEnable(Second_M3508_motor);
     DJIMotorEnable(Third_M3508_motor);
     DJIMotorEnable(Fourth_M3508_motor);
+    DMMotorEnable(Gimbal_Base);
     }
 
     // 根据控制模式设定旋转速度

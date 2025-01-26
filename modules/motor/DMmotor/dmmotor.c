@@ -30,6 +30,7 @@ static void DMMotorSetMode(DMMotor_Mode_e cmd, DMMotorInstance *motor)
     memset(motor->motor_can_instace->tx_buff, 0xff, 7);  // 发送电机指令的时候前面7bytes都是0xff
     motor->motor_can_instace->tx_buff[7] = (uint8_t)cmd; // 最后一位是命令id
     CANTransmit(motor->motor_can_instace, 1);
+    memset(motor->motor_can_instace->tx_buff, 0, 8);    //清空
 }
 
 static void DMMotorDecode(CANInstance *motor_can)
@@ -136,22 +137,35 @@ void DMMotorTask(void const *argument)
        
         LIMIT_MIN_MAX(set, DM_T_MIN, DM_T_MAX);
         motor_send_mailbox.position_des = float_to_uint(0, DM_P_MIN, DM_P_MAX, 16);
-        motor_send_mailbox.velocity_des = float_to_uint(0, DM_V_MIN, DM_V_MAX, 12);
-        motor_send_mailbox.torque_des = float_to_uint(pid_ref, DM_T_MIN, DM_T_MAX, 12);
+        // motor_send_mailbox.velocity_des = float_to_uint(pid_ref, DM_V_MIN, DM_V_MAX, 16);
+        motor_send_mailbox.velocity_des = 0;
+        motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
         motor_send_mailbox.Kp = 0;
         motor_send_mailbox.Kd = 0;
 
         if(motor->stop_flag == MOTOR_STOP)
-            motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
+            motor_send_mailbox.velocity_des = float_to_uint(0, DM_V_MIN, DM_V_MAX, 16);
 
-        motor->motor_can_instace->tx_buff[0] = (uint8_t)(motor_send_mailbox.position_des >> 8);
-        motor->motor_can_instace->tx_buff[1] = (uint8_t)(motor_send_mailbox.position_des);
-        motor->motor_can_instace->tx_buff[2] = (uint8_t)(motor_send_mailbox.velocity_des >> 4);
-        motor->motor_can_instace->tx_buff[3] = (uint8_t)(((motor_send_mailbox.velocity_des & 0xF) << 4) | (motor_send_mailbox.Kp >> 8));
-        motor->motor_can_instace->tx_buff[4] = (uint8_t)(motor_send_mailbox.Kp);
-        motor->motor_can_instace->tx_buff[5] = (uint8_t)(motor_send_mailbox.Kd >> 4);
-        motor->motor_can_instace->tx_buff[6] = (uint8_t)(((motor_send_mailbox.Kd & 0xF) << 4) | (motor_send_mailbox.torque_des >> 8));
-        motor->motor_can_instace->tx_buff[7] = (uint8_t)(motor_send_mailbox.torque_des);
+        /* MIT模式控制帧 */
+        // motor->motor_can_instace->tx_buff[0] = (uint8_t)(motor_send_mailbox.position_des >> 8);
+        // motor->motor_can_instace->tx_buff[1] = (uint8_t)(motor_send_mailbox.position_des);
+        // motor->motor_can_instace->tx_buff[2] = (uint8_t)(motor_send_mailbox.velocity_des >> 4);
+        // motor->motor_can_instace->tx_buff[3] = (uint8_t)(((motor_send_mailbox.velocity_des & 0xF) << 4) | (motor_send_mailbox.Kp >> 8));
+        // motor->motor_can_instace->tx_buff[4] = (uint8_t)(motor_send_mailbox.Kp);
+        // motor->motor_can_instace->tx_buff[5] = (uint8_t)(motor_send_mailbox.Kd >> 4);
+        // motor->motor_can_instace->tx_buff[6] = (uint8_t)(((motor_send_mailbox.Kd & 0xF) << 4) | (motor_send_mailbox.torque_des >> 8));
+        // motor->motor_can_instace->tx_buff[7] = (uint8_t)(motor_send_mailbox.torque_des);
+
+        /* 速度模式控制帧 */
+        static uint8_t *vbuf;
+        vbuf = (uint8_t *)&pid_ref;
+
+        motor->motor_can_instace->tx_buff[0] = *vbuf;
+        motor->motor_can_instace->tx_buff[1] = *(vbuf + 1);
+        motor->motor_can_instace->tx_buff[2] = *(vbuf + 2);
+        motor->motor_can_instace->tx_buff[3] = *(vbuf + 3);
+        
+
 
         CANTransmit(motor->motor_can_instace, 1);
 

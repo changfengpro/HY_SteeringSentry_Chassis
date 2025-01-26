@@ -1,3 +1,12 @@
+/*
+ * @Description: 
+ * @Author: changfeng
+ * @brief: 
+ * @version: 
+ * @Date: 2025-01-23 18:43:05
+ * @LastEditors:  
+ * @LastEditTime: 2025-01-26 10:53:25
+ */
 #include "motor_task.h"
 #include "LK9025.h"
 #include "HT04.h"
@@ -5,6 +14,7 @@
 #include "step_motor.h"
 #include "servo_motor.h"
 #include "power_control.h"
+#include "dmmotor.h"
 
 void MotorControlTask()
 {
