@@ -49,6 +49,8 @@
         "stdlib.h": "c",
         "dmmotor.h": "c",
         "master_process.h": "c",
-        "bsp_dwt.h": "c"
+        "bsp_dwt.h": "c",
+        "message_center.h": "c",
+        "memory.h": "c"
     }
 }

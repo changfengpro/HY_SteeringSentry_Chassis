@@ -27,6 +27,7 @@
 #define WHEEL_LINE_RATION (1 / (180.0f * REDUCTION_RATIO_WHEEL)) * PI * RADIUS_WHEEL   //将舵轮电机转速转换为底盘线速度的比例
 #define WHEEL_RPM_RATION  (1 / (RADIUS_WHEEL * REDUCTION_RATIO_WHEEL)) *(180.0f / PI)  //将底盘线速度转换为舵轮电机转速的比例
 #define RADIAN_TO_ANGLE 180 / PI;   //将弧度制转为角度制
+#define YAW_REMOTE_COEFF 0.034090909   //遥控器映射到母云台电机速度系数
 
 /* 底盘应用包含的模块和信息存储,底盘是单例模式,因此不需要为底盘建立单独的结构体 */
 #ifdef CHASSIS_BOARD // 如果是底盘板,使用板载IMU获取底盘转动角速度
@@ -38,6 +39,7 @@ attitude_t *Chassis_IMU_data;
 #ifdef ONE_BOARD
 static Publisher_t *chassis_pub;                    // 用于发布底盘的数据
 static Subscriber_t *chassis_sub;                   // 用于订阅底盘的控制命令
+static Publisher_t *GimbalBase_Pub;                 //用于订阅母云台的数据
 attitude_t *Chassis_IMU_data;
 #endif                                              // !ONE_BOARD
 
@@ -60,6 +62,7 @@ static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算�
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
 static float Init_angle[4] = { 1.0f , -144.0f , 3.0f , 164.0f };
+static float yaw_angle;
 
 
 /* 私有函数 */
@@ -363,6 +366,7 @@ void ChassisInit()
     Chassis_IMU_data = INS_Init(); // 底盘IMU初始化
     chassis_sub = SubRegister("chassis_cmd", sizeof(Chassis_Ctrl_Cmd_s));
     chassis_pub = PubRegister("chassis_feed", sizeof(Chassis_Upload_Data_s));
+    GimbalBase_Pub = PubRegister("GimbalBase_feed", sizeof(float));
 #endif // ONE_BOARD
 }
 
@@ -387,6 +391,8 @@ static void LimitChassisOutput()
     DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
     DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
     DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
+    DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_speed);
+    
 }
 
 /**
@@ -586,10 +592,10 @@ void ChassisTask()
     static float sin_theta, cos_theta;
     cos_theta = arm_cos_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
     sin_theta = arm_sin_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
-    // chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
-    // chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
-
-    ChassisHandle_Deliver_Config();
+    chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
+    chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+    chassis_handle.gimbal_speed = chassis_cmd_recv.gimbal_speed * YAW_REMOTE_COEFF;
+    // ChassisHandle_Deliver_Config();
 
     // 根据控制模式进行运动学解算,计算底盘输出
     Steer_Chassis_Control(&chassis_handle);
@@ -607,9 +613,11 @@ void ChassisTask()
     // chassis_feedback_data.bullet_speed = referee_data->GameRobotState.shooter_id1_17mm_speed_limit;
     // chassis_feedback_data.rest_heat = referee_data->PowerHeatData.shooter_heat0;
 
+    yaw_angle = Gimbal_Base->measure.position * RAD_2_DEGREE;
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
+    PubPushMessage(GimbalBase_Pub, (void *)&yaw_angle);
 #endif
 #ifdef CHASSIS_BOARD
     CANCommSend(chasiss_can_comm, (void *)&chassis_feedback_data);
