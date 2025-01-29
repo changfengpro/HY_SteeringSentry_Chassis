@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-01-23 18:43:05
  * @LastEditors:  
- * @LastEditTime: 2025-01-26 10:53:25
+ * @LastEditTime: 2025-01-29 21:11:02
  */
 #include "motor_task.h"
 #include "LK9025.h"
@@ -25,7 +25,7 @@ void MotorControlTask()
     PowerControl();
     /* 如果有对应的电机则取消注释,可以加入条件编译或者register对应的idx判断是否注册了电机 */
     LKMotorControl();
-
+    
     // legacy support
     // 由于ht04电机的反馈方式为接收到一帧消息后立刻回传,以此方式连续发送可能导致总线拥塞
     // 为了保证高频率控制,HTMotor中提供了以任务方式启动控制的接口,可通过宏定义切换

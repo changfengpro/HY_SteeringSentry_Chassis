@@ -62,7 +62,7 @@ static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算�
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
 static float Init_angle[4] = { 1.0f , -144.0f , 3.0f , 164.0f };
-static float yaw_angle;
+static float Yaw_single_angle, Yaw_angle_sum;
 
 
 /* 私有函数 */
@@ -71,6 +71,7 @@ static void Steer_Speed_Calcu(ChassisHandle_t *chassis_handle, float chassis_vx,
 static void Steer_angle_change(ChassisHandle_t *chassis_handle, float chassis_vx, float chassis_vy, float chassis_wz);
 static void Steer_Calculate(ChassisHandle_t *chassis_handle, float chassis_vx, float chassis_vy, float chassis_wz);
 static void Steer_Chassis_Control(ChassisHandle_t *Chassis_hanlde);
+static void YawAngleCalculate();
 
 // first表示第一象限， second表示第二象限，以此类推
 static DJIMotorInstance *First_GM6020_motor, *Second_GM6020_motor, *Third_GM6020_motor, *Fourth_GM6020_motor, \
@@ -530,10 +531,42 @@ static void Steer_Chassis_Control(ChassisHandle_t *Chassis_hanlde)
     Steer_Calculate(Chassis_hanlde, Chassis_hanlde->vx, Chassis_hanlde->vy, Chassis_hanlde->wz);
 }
 
+/**
+ * @brief 母云台达妙电机总角度计算
+ * @return 
+ */
+static void YawAngleCalculate()
+{
+    static float angle, last_angle, temp, rad_sum;
+    angle = Gimbal_Base->measure.position; // 从云台获取的当前yaw电机角度
+    
+    if(fabs(angle - last_angle) > 0.001)
+    {
+        if((angle - last_angle) < -12.5)
+        {
+            rad_sum += 25 + angle - last_angle;
+        }
+        else if((angle - last_angle) >  12.5)
+        {
+            rad_sum += 25 + last_angle - angle;
+        }
+        else
+        {
+            rad_sum += angle - last_angle;
+        }
+    }
+    Yaw_angle_sum = rad_sum * RAD_2_DEGREE;
+    temp = fmodf(Yaw_angle_sum, 360.0);
+    Yaw_single_angle = fabs(temp);
+    last_angle = angle;
+}
+
 
 /* 机器人底盘控制核心任务 */
 void ChassisTask()
-{
+{   
+
+    YawAngleCalculate();
     // 后续增加没收到消息的处理(双板的情况)
     // 获取新的控制信息
 #ifdef ONE_BOARD
@@ -614,11 +647,10 @@ void ChassisTask()
     // chassis_feedback_data.bullet_speed = referee_data->GameRobotState.shooter_id1_17mm_speed_limit;
     // chassis_feedback_data.rest_heat = referee_data->PowerHeatData.shooter_heat0;
 
-    yaw_angle = Gimbal_Base->measure.position * RAD_2_DEGREE;
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
-    PubPushMessage(GimbalBase_Pub, (void *)&yaw_angle);
+    PubPushMessage(GimbalBase_Pub, (void *)&Yaw_single_angle);
 #endif
 #ifdef CHASSIS_BOARD
     CANCommSend(chasiss_can_comm, (void *)&chassis_feedback_data);

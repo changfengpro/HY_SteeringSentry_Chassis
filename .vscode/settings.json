@@ -52,6 +52,10 @@
         "bsp_dwt.h": "c",
         "message_center.h": "c",
         "memory.h": "c",
-        "user_lib.h": "c"
+        "user_lib.h": "c",
+        "bsp_init.h": "c",
+        "ht04.h": "c",
+        "freertos.h": "c",
+        "step_motor.h": "c"
     }
 }
