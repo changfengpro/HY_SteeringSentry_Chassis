@@ -594,6 +594,7 @@ void ChassisTask()
     sin_theta = arm_sin_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
     chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
     chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+    chassis_handle.wz = chassis_cmd_recv.wz;
     chassis_handle.gimbal_speed = chassis_cmd_recv.gimbal_speed * YAW_REMOTE_COEFF;
     // ChassisHandle_Deliver_Config();
 

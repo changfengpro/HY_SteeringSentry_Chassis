@@ -48,7 +48,7 @@ static Shoot_Upload_Data_s shoot_fetch_data; // 从发射获取的反馈信息
 
 static Robot_Status_e robot_state; // 机器人整体工作状态
 
-static float Yaw_angle;
+static float Yaw_angle, yaw_single_angle;
 
 BMI088Instance *bmi088_test; // 云台IMU
 BMI088_Data_t bmi088_data;
@@ -133,8 +133,17 @@ static void CalcOffsetAngle()
 {   
     SubGetMessage(GimbalBase_sub, &Yaw_angle);
     // 别名angle提高可读性,不然太长了不好看,虽然基本不会动这个函数
-    static float angle;
+    static float angle, last_angle, angle_sum, temp;
     angle = Yaw_angle; // 从云台获取的当前yaw电机角度
+    
+    if(fabs(angle - last_angle) > 0.1)
+    {
+        angle_sum += angle - last_angle;
+    }
+    temp = fmodf(angle_sum, 360.0);
+    yaw_single_angle = fabs(temp);
+    last_angle = angle;
+
 #if YAW_ECD_GREATER_THAN_4096                               // 如果大于180度
     if (angle > YAW_ALIGN_ANGLE && angle <= 180.0f + YAW_ALIGN_ANGLE)
         chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
@@ -150,7 +159,6 @@ static void CalcOffsetAngle()
     else
         chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE + 360.0f;
 #endif
-
 }
 
 /**
@@ -165,10 +173,14 @@ static void RemoteControlSet()
         chassis_cmd_send.chassis_mode = CHASSIS_ROTATE;
         gimbal_cmd_send.gimbal_mode = GIMBAL_GYRO_MODE;
     }
-    else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[中],底盘和云台分离,底盘保持不转动
+    if (switch_is_mid(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[中],底盘和云台分离,底盘保持不转动
     {
         chassis_cmd_send.chassis_mode = CHASSIS_NO_FOLLOW;
         gimbal_cmd_send.gimbal_mode = GIMBAL_FREE_MODE;
+    }
+    else if(switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],跟随模式
+    {
+        chassis_cmd_send.chassis_mode = CHASSIS_FOLLOW_GIMBAL_YAW;
     }
 
     // 云台参数,确定云台控制数据
@@ -188,13 +200,13 @@ static void RemoteControlSet()
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r_ / 1.5; // _水平方向
     chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r1 / 1.5; // 1数值方向
-    chassis_cmd_send.gimbal_speed = (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
+    chassis_cmd_send.gimbal_speed = -(float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
 
     // 发射参数
-    if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
-        ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启
-    else
-        ; // 弹舱舵机控制,待添加servo_motor模块,关闭
+    // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
+    //     ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启
+    // else
+    //     ; // 弹舱舵机控制,待添加servo_motor模块,关闭
 
     // 摩擦轮控制,拨轮向上打为负,向下为正
     if (rc_data[TEMP].rc.dial < -100) // 向上超过100,打开摩擦轮

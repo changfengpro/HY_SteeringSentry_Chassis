@@ -51,6 +51,7 @@
         "master_process.h": "c",
         "bsp_dwt.h": "c",
         "message_center.h": "c",
-        "memory.h": "c"
+        "memory.h": "c",
+        "user_lib.h": "c"
     }
 }
