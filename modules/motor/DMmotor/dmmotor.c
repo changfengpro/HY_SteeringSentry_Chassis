@@ -120,7 +120,7 @@ void DMMotorOuterLoop(DMMotorInstance *motor, Closeloop_Type_e type)
 //@Todo: 目前只实现了力控，更多位控PID等请自行添加
 void DMMotorTask(void const *argument)
 {
-    float  pid_ref, set;
+    float  pid_measure, pid_ref, set;
     DMMotorInstance *motor = (DMMotorInstance *)argument;
    //DM_Motor_Measure_s *measure = &motor->measure;
     Motor_Control_Setting_s *setting = &motor->motor_settings;
@@ -128,23 +128,22 @@ void DMMotorTask(void const *argument)
     //uint16_t tmp;
     DMMotor_Send_s motor_send_mailbox;
     while (1)
-    {
+    {   
+        pid_measure = motor->measure.total_angle;
         pid_ref = motor->pid_ref;
-        
-        set = pid_ref;
-        if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
-            set *= -1;
-       
-        LIMIT_MIN_MAX(set, DM_T_MIN, DM_T_MAX);
-        motor_send_mailbox.position_des = float_to_uint(0, DM_P_MIN, DM_P_MAX, 16);
-        // motor_send_mailbox.velocity_des = float_to_uint(pid_ref, DM_V_MIN, DM_V_MAX, 16);
-        motor_send_mailbox.velocity_des = 0;
-        motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
-        motor_send_mailbox.Kp = 0;
-        motor_send_mailbox.Kd = 0;
 
-        if(motor->stop_flag == MOTOR_STOP)
-            motor_send_mailbox.velocity_des = float_to_uint(0, DM_V_MIN, DM_V_MAX, 16);
+        if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
+            pid_ref *= -1;
+       
+        LIMIT_MIN_MAX(set, DM_V_MIN, DM_V_MAX);
+        // motor_send_mailbox.position_des = float_to_uint(0, DM_P_MIN, DM_P_MAX, 16);
+        // // motor_send_mailbox.velocity_des = float_to_uint(pid_ref, DM_V_MIN, DM_V_MAX, 16);
+        // motor_send_mailbox.velocity_des = 0;
+        // motor_send_mailbox.torque_des = float_to_uint(0, DM_T_MIN, DM_T_MAX, 12);
+        // motor_send_mailbox.Kp = 0;
+        // motor_send_mailbox.Kd = 0;
+
+            // motor_send_mailbox.velocity_des = float_to_uint(0, DM_V_MIN, DM_V_MAX, 16);
 
         /* MIT模式控制帧 */
         // motor->motor_can_instace->tx_buff[0] = (uint8_t)(motor_send_mailbox.position_des >> 8);
@@ -156,9 +155,17 @@ void DMMotorTask(void const *argument)
         // motor->motor_can_instace->tx_buff[6] = (uint8_t)(((motor_send_mailbox.Kd & 0xF) << 4) | (motor_send_mailbox.torque_des >> 8));
         // motor->motor_can_instace->tx_buff[7] = (uint8_t)(motor_send_mailbox.torque_des);
 
+        /*位置环计算*/
+        pid_ref = PIDCalculate(&motor->angle_PID, pid_measure, pid_ref);
+
+        set = pid_ref;
+
+        if(motor->stop_flag == MOTOR_STOP)
+            set = 0;
+
         /* 速度模式控制帧 */
         static uint8_t *vbuf;
-        vbuf = (uint8_t *)&pid_ref;
+        vbuf = (uint8_t *)&set;
 
         motor->motor_can_instace->tx_buff[0] = *vbuf;
         motor->motor_can_instace->tx_buff[1] = *(vbuf + 1);

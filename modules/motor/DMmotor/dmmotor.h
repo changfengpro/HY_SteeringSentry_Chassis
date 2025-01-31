@@ -26,6 +26,7 @@ typedef struct
     float T_Mos;
     float T_Rotor;
     int32_t total_round;
+    float total_angle;
 }DM_Motor_Measure_s;
 
 typedef struct

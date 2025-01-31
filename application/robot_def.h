@@ -142,7 +142,7 @@ typedef struct
     float vx;           // 前进方向速度
     float vy;           // 横移方向速度
     float wz;           // 旋转速度
-    float gimbal_speed; //母云台速度
+    float gimbal_angle; //母云台角度
     float offset_angle; // 底盘和归中位置的夹角
     chassis_mode_e chassis_mode;
     int chassis_speed_buff;

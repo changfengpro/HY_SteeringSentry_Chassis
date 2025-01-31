@@ -331,6 +331,14 @@ void ChassisInit()
     // .can_init_config.id = (void *)0x00,
     .can_init_config.rx_id = 0x10,
     .can_init_config.tx_id = 0x20F,
+
+    .controller_param_init_config.angle_PID = {
+        .Kp = 1.5,
+        .Ki = 0,
+        .Kd = 0,
+        .MaxOut = 15,
+        .IntegralLimit = 3000,
+    },
     };
 
     First_GM6020_motor  = DJIMotorInit(&chassis_first_GM6020_motor_config);
@@ -392,7 +400,7 @@ static void LimitChassisOutput()
     DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
     DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
     DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
-    DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_speed);
+    DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_angle);
     
 }
 
@@ -540,7 +548,7 @@ static void YawAngleCalculate()
     static float angle, last_angle, temp, rad_sum;
     angle = Gimbal_Base->measure.position; // 从云台获取的当前yaw电机角度
     
-    if(fabs(angle - last_angle) > 0.001)
+    if(fabs(angle - last_angle) > 0.0001)
     {
         if((angle - last_angle) < -12.5)
         {
@@ -558,6 +566,7 @@ static void YawAngleCalculate()
     Yaw_angle_sum = rad_sum * RAD_2_DEGREE;
     temp = fmodf(Yaw_angle_sum, 360.0);
     Yaw_single_angle = fabs(temp);
+    Gimbal_Base->measure.total_angle = Yaw_angle_sum;
     last_angle = angle;
 }
 
@@ -566,7 +575,7 @@ static void YawAngleCalculate()
 void ChassisTask()
 {   
 
-    YawAngleCalculate();
+    YawAngleCalculate();    //yaw电机总角度计算
     // 后续增加没收到消息的处理(双板的情况)
     // 获取新的控制信息
 #ifdef ONE_BOARD
@@ -628,11 +637,13 @@ void ChassisTask()
     chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
     chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
     chassis_handle.wz = chassis_cmd_recv.wz;
-    chassis_handle.gimbal_speed = chassis_cmd_recv.gimbal_speed * YAW_REMOTE_COEFF;
+    chassis_handle.gimbal_angle = chassis_cmd_recv.gimbal_angle;
     // ChassisHandle_Deliver_Config();
 
     // 根据控制模式进行运动学解算,计算底盘输出
     Steer_Chassis_Control(&chassis_handle);
+
+    
 
     // 根据裁判系统的反馈数据和电容数据对输出限幅并设定闭环参考值
     LimitChassisOutput();

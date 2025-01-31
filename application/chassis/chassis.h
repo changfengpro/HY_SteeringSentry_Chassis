@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-01-23 18:43:05
  * @LastEditors:  
- * @LastEditTime: 2025-01-29 21:23:28
+ * @LastEditTime: 2025-01-31 20:36:13
  */
 #ifndef CHASSIS_H
 #define CHASSIS_H
@@ -40,7 +40,7 @@ typedef struct
     float motor_set_speed[4];
     float motor_set_steer[4];
     float max_speed;
-    float gimbal_speed;
+    float gimbal_angle;
     int TurnFlag[4];
     enum  Direction direction[4];
 } ChassisHandle_t;
