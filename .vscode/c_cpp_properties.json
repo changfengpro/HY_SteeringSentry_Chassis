@@ -4,7 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/modules/motor/DMmotor"
+                "${workspaceFolder}/modules/motor/DMmotor",
+                "${workspaceFolder}/bsp/usart",
+                "${workspaceFolder}/bsp/log"
             ],
             "defines": [
                 "_DEBUG",
