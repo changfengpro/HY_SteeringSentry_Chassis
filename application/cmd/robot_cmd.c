@@ -9,6 +9,7 @@
 #include "general_def.h"
 #include "dji_motor.h"
 #include "bmi088.h"
+#include "cmd_vel.h"
 // bsp
 #include "bsp_dwt.h"
 #include "bsp_log.h"
@@ -33,6 +34,7 @@ static Chassis_Ctrl_Cmd_s chassis_cmd_send;      // 发送给底盘应用的信�
 static Chassis_Upload_Data_s chassis_fetch_data; // 从底盘应用接收的反馈信息信息,底盘功率枪口热量与底盘运动状态等
 
 static RC_ctrl_t *rc_data;              // 遥控器数据,初始化时返回
+static Radar_Data *radar_data;          //导航数据，初始化时返回
 static Vision_Recv_s *vision_recv_data; // 视觉接收数据指针,初始化时返回
 static Vision_Send_s vision_send_data;  // 视觉发送数据
 
@@ -96,8 +98,9 @@ void RobotCMDInit()
     //     },
     // };
     //bmi088_test = BMI088Register(&bmi088_config);
-   rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
-    vision_recv_data = VisionInit(&huart1); // 视觉通信串口
+    rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
+    radar_data = CmdVelControlInit(&huart6);
+    // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
 
     gimbal_cmd_pub = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
     gimbal_feed_sub = SubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
@@ -163,6 +166,16 @@ static void CalcOffsetAngle()
 }
 
 /**
+ * @brief 输入为导航的模式
+ * @return NULL
+ */
+static void RadarControlSet()
+{     
+    chassis_cmd_send.vx = (float)radar_data->linear_x * 50;  //线速度
+    chassis_cmd_send.wz = (float)radar_data->angular_z * 5000; //角速度
+}
+
+/**
  * @brief 控制输入为遥控器(调试时)的模式和控制量设置
  *
  */
@@ -189,6 +202,7 @@ static void RemoteControlSet()
     {
         // 待添加,视觉会发来和目标的误差,同样将其转化为total angle的增量进行控制
         // ...
+        chassis_cmd_send.chassis_mode = CHASSIS_RADAR;  //导航模式
     }
     // 左侧开关状态为[下],或视觉未识别到目标,纯遥控器拨杆控制
     if (switch_is_down(rc_data[TEMP].rc.switch_left) || vision_recv_data->target_state == NO_TARGET)
@@ -198,11 +212,16 @@ static void RemoteControlSet()
     }
     // 云台软件限位
     
+#ifdef REMOTE_CONTROL
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r_ / 1.5; // _水平方向
     chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r1 / 1.5; // 1数值方向
     chassis_cmd_send.gimbal_angle += -0.001 * (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
-
+#endif
+#ifdef RADAR_CONTROL
+    chassis_cmd_send.vx = (float)radar_data->linear_x * 50;  //线速度
+    chassis_cmd_send.wz = (float)radar_data->angular_z * 20; //角速度
+#endif
     // 发射参数
     // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
     //     ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启
@@ -357,6 +376,10 @@ void RobotCMDTask()
         RemoteControlSet();
     else if (switch_is_up(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[上],键盘控制
         MouseKeySet();
+
+#ifdef RADAR_CONTROL
+    RadarControlSet();
+#endif
 
     EmergencyHandler(); // 处理模块离线和遥控器急停等紧急情况
 

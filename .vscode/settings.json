@@ -57,6 +57,9 @@
         "ht04.h": "c",
         "freertos.h": "c",
         "step_motor.h": "c",
-        "cmsis_os.h": "c"
+        "cmsis_os.h": "c",
+        "cmd_vel.h": "c",
+        "usart.h": "c",
+        "complex": "c"
     }
 }

@@ -5,10 +5,16 @@
  * @version: 
  * @Date: 2025-02-01 20:35:00
  * @LastEditors:  
- * @LastEditTime: 2025-02-01 23:08:23
+ * @LastEditTime: 2025-02-02 13:30:34
  */
 #ifndef CMD_VEL_H
 #define CMD_VEL_H
+
+#include "stdint.h"
+#include "bsp_usart.h"
+#include "daemon.h"
+#include "bsp_log.h"
+#include "usart.h"
 
 #pragma pack(1)
 typedef struct 
@@ -25,7 +31,7 @@ typedef struct
  * @param {UART_HandleTypeDef} *cmd_vel_uasrt_handle
  * @return 
  */
-Radar_Data CmdVelInit(UART_HandleTypeDef *cmd_vel_uasrt_handle);
+Radar_Data *CmdVelControlInit(UART_HandleTypeDef *cmd_vel_uasrt_handle);
 
 /**
  * @brief 检查遥控器是否在线
