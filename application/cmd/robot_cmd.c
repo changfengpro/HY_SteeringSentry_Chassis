@@ -170,7 +170,8 @@ static void CalcOffsetAngle()
  * @return NULL
  */
 static void RadarControlSet()
-{     
+{    
+    chassis_cmd_send.chassis_mode = CHASSIS_RADAR;
     chassis_cmd_send.vx = (float)radar_data->linear_x * 50;  //线速度
     chassis_cmd_send.wz = (float)radar_data->angular_z * 5000; //角速度
 }
@@ -202,7 +203,7 @@ static void RemoteControlSet()
     {
         // 待添加,视觉会发来和目标的误差,同样将其转化为total angle的增量进行控制
         // ...
-        chassis_cmd_send.chassis_mode = CHASSIS_RADAR;  //导航模式
+        // chassis_cmd_send.chassis_mode = CHASSIS_RADAR;  //导航模式
     }
     // 左侧开关状态为[下],或视觉未识别到目标,纯遥控器拨杆控制
     if (switch_is_down(rc_data[TEMP].rc.switch_left) || vision_recv_data->target_state == NO_TARGET)
