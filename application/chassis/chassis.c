@@ -535,8 +535,8 @@ static void Steer_Calculate(ChassisHandle_t *chassis_handle, float chassis_vx, f
 }
 
 static void Steer_Chassis_Control(ChassisHandle_t *Chassis_hanlde)
-{
-    Steer_Calculate(Chassis_hanlde, Chassis_hanlde->vx, Chassis_hanlde->vy, Chassis_hanlde->wz);
+{   
+    Steer_Calculate(Chassis_hanlde, Chassis_hanlde->vy, Chassis_hanlde->vx, Chassis_hanlde->wz);    //修改为机器人标准坐标系，不想修改解算函数，直接将Vx,Vy调换位置传入
 }
 
 /**
