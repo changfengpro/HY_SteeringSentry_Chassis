@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:35:00
  * @LastEditors:  
- * @LastEditTime: 2025-02-02 13:30:34
+ * @LastEditTime: 2025-02-04 19:24:51
  */
 #ifndef CMD_VEL_H
 #define CMD_VEL_H
@@ -19,8 +19,16 @@
 #pragma pack(1)
 typedef struct 
 {
-    float linear_x;
-    float angular_z;   
+    float x;
+    float y;
+    float z;
+} Vector3;  //通用三维向量结构体
+
+
+typedef struct 
+{
+    Vector3 linear;     //线速度
+    Vector3 angular;    //角速度
 } Radar_Data;
 #pragma pack()
 

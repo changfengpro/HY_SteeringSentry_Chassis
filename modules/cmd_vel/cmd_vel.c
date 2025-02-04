@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:34:56
  * @LastEditors:  
- * @LastEditTime: 2025-02-02 10:52:01
+ * @LastEditTime: 2025-02-04 19:29:06
  */
 
 #include "cmd_vel.h"
@@ -13,9 +13,8 @@
 
 #define START_BYTE 0xAA
 #define END_BYTE 0x55
-#define CMD_VEL_CONTROL_FRAME_SIZE 11u  //导航接的buffer大小
+#define CMD_VEL_CONTROL_FRAME_SIZE 27u  //导航接的buffer大小
 
-static uint8_t rx_buffer[11];
 static Radar_Data radar_ctrl;
 static uint8_t cmd_vel_init_flag;
 
@@ -29,32 +28,39 @@ static DaemonInstance *cmd_vel_daemo_instance;  //导航守护进程实例
  */
 static void Cmd_vel_Parse(const uint8_t *cmd_vel_buf)
 {
-    //检查起始字节
-    if(cmd_vel_buf[0] != START_BYTE || cmd_vel_buf[10] != END_BYTE)
+    // 检查起始字节和结束字节
+    if(cmd_vel_buf[0] != START_BYTE || cmd_vel_buf[26] != END_BYTE)
     {
         LOGWARNING("[cmd_vel] Packet format error");
         return;
     }
 
-        //计算校验和(前9字节)
-        uint8_t checksum = 0;
-        for(int i = 0; i< 9; i++)
-        {
-            checksum ^= cmd_vel_buf[i];
-        }
-        
-        if(checksum == cmd_vel_buf[9]) //校验正确
-        {
-           //解析数据
-            memcpy(&radar_ctrl.linear_x, &cmd_vel_buf[1], sizeof(float));
-            memcpy(&radar_ctrl.angular_z, &cmd_vel_buf[5], sizeof(float));
+    // 计算校验和（前 25 字节）
+    uint8_t checksum = 0;
+    for(int i = 0; i < 25; i++)
+    {
+        checksum ^= cmd_vel_buf[i];
+    }
+    
+    if(checksum == cmd_vel_buf[25]) // 校验正确
+    {
+        // 解析数据
+        memcpy(&radar_ctrl.linear.x, &cmd_vel_buf[1], sizeof(float));
+        memcpy(&radar_ctrl.linear.y, &cmd_vel_buf[5], sizeof(float));
+        memcpy(&radar_ctrl.linear.z, &cmd_vel_buf[9], sizeof(float));
+        memcpy(&radar_ctrl.angular.x, &cmd_vel_buf[13], sizeof(float));
+        memcpy(&radar_ctrl.angular.y, &cmd_vel_buf[17], sizeof(float));
+        memcpy(&radar_ctrl.angular.z, &cmd_vel_buf[21], sizeof(float));
 
-            LOGINFO("[cmd_vel] Parsed data: Linear x: %.6f, Angular z: %.6f", radar_ctrl.linear_x, radar_ctrl.angular_z);
-        }
-        else
-        {
-            LOGWARNING("[cmd_vel] Checksum error");
-        }
+        LOGINFO("[cmd_vel] Parsed data: Linear x: %.6f, Linear y: %.6f, Linear z: %.6f, "
+                "Angular x: %.6f, Angular y: %.6f, Angular z: %.6f",
+                radar_ctrl.linear.x, radar_ctrl.linear.y, radar_ctrl.linear.z,
+                radar_ctrl.angular.x, radar_ctrl.angular.y, radar_ctrl.angular.z);
+    }
+    else
+    {
+        LOGWARNING("[cmd_vel] Checksum error");
+    }
 }
 
 /**

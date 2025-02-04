@@ -172,8 +172,9 @@ static void CalcOffsetAngle()
 static void RadarControlSet()
 {    
     chassis_cmd_send.chassis_mode = CHASSIS_RADAR;
-    chassis_cmd_send.vx = (float)radar_data->linear_x * 50;  //线速度
-    chassis_cmd_send.wz = (float)radar_data->angular_z * 5000; //角速度
+    chassis_cmd_send.vx = (float)radar_data->linear.x * 50;  
+    chassis_cmd_send.vy = (float)radar_data->linear.y * 50;
+    chassis_cmd_send.wz = (float)radar_data->angular.z * 5000; 
 }
 
 /**
@@ -213,16 +214,10 @@ static void RemoteControlSet()
     }
     // 云台软件限位
     
-#ifdef REMOTE_CONTROL
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r_ / 1.5; // _水平方向
     chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r1 / 1.5; // 1数值方向
     chassis_cmd_send.gimbal_angle += -0.001 * (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
-#endif
-#ifdef RADAR_CONTROL
-    chassis_cmd_send.vx = (float)radar_data->linear_x * 50;  //线速度
-    chassis_cmd_send.wz = (float)radar_data->angular_z * 20; //角速度
-#endif
     // 发射参数
     // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
     //     ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启
@@ -373,14 +368,13 @@ void RobotCMDTask()
     // 根据gimbal的反馈值计算云台和底盘正方向的夹角,不需要传参,通过static私有变量完成
     CalcOffsetAngle();
     // 根据遥控器左侧开关,确定当前使用的控制模式为遥控器调试还是键鼠
-    if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[下],遥控器控制
-        RemoteControlSet();
-    else if (switch_is_up(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[上],键盘控制
+    
+    if (switch_is_up(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[上],键盘控制
         MouseKeySet();
-
-#ifdef RADAR_CONTROL
-    RadarControlSet();
-#endif
+    else if (switch_is_mid(rc_data[TEMP].rc.switch_left)) //遥控器左侧开关状态为[中],导航控制
+        RadarControlSet();
+    else if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[下],遥控器控制
+        RemoteControlSet();
 
     EmergencyHandler(); // 处理模块离线和遥控器急停等紧急情况
 

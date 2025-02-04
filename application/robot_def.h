@@ -44,9 +44,7 @@
 #define REDUCTION_RATIO_WHEEL 19.0f // 电机减速比,因为编码器量测的是转子的速度而不是输出轴的速度故需进行转换
 #define RADIUS 0.2                    //车轮到转向中心的距离  单位：米
 
-// 控制模式
-// #define REMOTE_CONTROL  //遥控器控制模式
-#define RADAR_CONTROL   //导航模式
+
 
 #define GYRO2GIMBAL_DIR_YAW 1   // 陀螺仪数据相较于云台的yaw的方向,1为相同,-1为相反
 #define GYRO2GIMBAL_DIR_PITCH 1 // 陀螺仪数据相较于云台的pitch的方向,1为相同,-1为相反
