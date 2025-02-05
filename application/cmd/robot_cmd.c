@@ -173,7 +173,7 @@ static void RadarControlSet()
 {    
     chassis_cmd_send.chassis_mode = CHASSIS_RADAR;
     chassis_cmd_send.vx = (float)radar_data->linear.x * 50;  
-    chassis_cmd_send.vy = (float)radar_data->linear.y * 50;
+    chassis_cmd_send.vy = -(float)radar_data->linear.y * 50;
     chassis_cmd_send.wz = (float)radar_data->angular.z * 5000; 
 }
 

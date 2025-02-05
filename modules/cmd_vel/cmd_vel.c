@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:34:56
  * @LastEditors:  
- * @LastEditTime: 2025-02-04 19:29:06
+ * @LastEditTime: 2025-02-05 17:15:06
  */
 
 #include "cmd_vel.h"
@@ -103,7 +103,7 @@ Radar_Data *CmdVelControlInit(UART_HandleTypeDef *cmd_vel_usart_handle)
     // 进行进程守护的注册，用于定时检查串口是否正常工作
     Daemon_Init_Config_s daemo_conf = {
         .reload_count = 10, //100ms未接收到数据视为离线
-        .callback = CmdVelControlRxCallback,
+        .callback = CmdVelLostCallback,
         .owner_id = NULL,   //只有一个cmd_vel不需要id
     };
     cmd_vel_daemo_instance = DaemonRegister(&daemo_conf);
