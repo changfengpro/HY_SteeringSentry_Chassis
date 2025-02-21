@@ -37,6 +37,7 @@ typedef enum
     PID_ChangingIntegrationRate = 0b00100000,     // 0010 0000
     PID_DerivativeFilter = 0b01000000,            // 0100 0000
     PID_ErrorHandle = 0b10000000,                 // 1000 0000
+    PIDTrapezoidAccelerationDeceleration = 0b100000000,    // 1000 0000 0000
 } PID_Improvement_e;
 
 /* PID 报错类型枚举*/
@@ -88,6 +89,12 @@ typedef struct
     float Last_Output;
     float Last_Dout;
 
+     // 新增梯形加减速相关变量
+    float TargetOutput;
+    float CurrentOutput;
+    float SpeedLimit;     // 输出变化的最大速度
+    float AccelerationLimit; // 输出变化的最大加速度
+
     float Ref;
 
     uint32_t DWT_CNT;
@@ -113,6 +120,8 @@ typedef struct // config parameter
     float CoefB;         // ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
     float Output_LPF_RC; // RC = 1/omegac
     float Derivative_LPF_RC;
+    float Max_Accel;
+    float speedlimit;
 } PID_Init_Config_s;
 
 /**

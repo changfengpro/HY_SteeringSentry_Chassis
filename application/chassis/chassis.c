@@ -28,7 +28,6 @@
 #define WHEEL_RPM_RATION  (1 / (RADIUS_WHEEL * REDUCTION_RATIO_WHEEL)) *(180.0f / PI)  //将底盘线速度转换为舵轮电机转速的比例
 #define RADIAN_TO_ANGLE 180 / PI;   //将弧度制转为角度制
 #define YAW_REMOTE_COEFF 0.034090909   //遥控器映射到母云台电机速度系数
-
 /* 底盘应用包含的模块和信息存储,底盘是单例模式,因此不需要为底盘建立单独的结构体 */
 #ifdef CHASSIS_BOARD // 如果是底盘板,使用板载IMU获取底盘转动角速度
 #include "can_comm.h"
@@ -61,7 +60,7 @@ static float chassis_vx, chassis_vy;                      // 将云台系的速�
 static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算后的临时输出,待进行限幅
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
-static float Init_angle[4] = { 1.0f , -144.0f , 3.0f , 164.0f };
+static float Init_angle[4] = { 1.0f , -144.0f , 3.0f , -16.0f };
 static float Yaw_single_angle, Yaw_angle_sum;
 
 
@@ -82,7 +81,9 @@ ChassisHandle_t chassis_handle;
 
 void ChassisInit()
 {
-
+    Chassis_IMU_data = INS_Init(); // 底盘IMU初始化
+    static float Max_accel_t = 40000;
+    static float Speed_limit_t = 15000;
     Motor_Init_Config_s chassis_first_GM6020_motor_config =       //first表示第一象限， second表示第二象限，以此类推
     {
         .motor_type = GM6020,
@@ -97,15 +98,15 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.angle_PID = {.Improve = 0,
-                                                        .Kp = 35,
+        .controller_param_init_config = {.angle_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                                                        .Kp = 25,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
-                                                        .MaxOut = 20000,
+                                                        .MaxOut = 2000,
                                                         .IntegralLimit = 3000},
-        .speed_PID = {.Improve = 0,
-                        .Kp = 30,
+        .speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                        .Kp = 20,
                         .Ki = 1,
                         .Kd = 0,
                         .DeadBand = 0,
@@ -130,15 +131,15 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.angle_PID = {.Improve = 0,
-                                                        .Kp = 35,
+        .controller_param_init_config = {.angle_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                                                        .Kp = 25,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
-                                                        .MaxOut = 20000,
+                                                        .MaxOut = 2000,
                                                         .IntegralLimit = 3000},
-        .speed_PID = {.Improve = 0,
-                        .Kp = 30,
+        .speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                        .Kp = 20,
                         .Ki = 1,
                         .Kd = 0,
                         .DeadBand = 0,
@@ -163,15 +164,15 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.angle_PID = {.Improve = 0,
-                                                        .Kp = 35,
+        .controller_param_init_config = {.angle_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                                                        .Kp = 25,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
-                                                        .MaxOut = 20000,
+                                                        .MaxOut = 2000,
                                                         .IntegralLimit = 3000},
-        .speed_PID = {.Improve = 0,
-                        .Kp = 30,
+        .speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                        .Kp = 20,
                         .Ki = 1,
                         .Kd = 0,
                         .DeadBand = 0,
@@ -196,15 +197,15 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.angle_PID = {.Improve = 0,
-                                                        .Kp = 35,
+        .controller_param_init_config = {.angle_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                                                        .Kp = 25,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
-                                                        .MaxOut = 20000,
+                                                        .MaxOut = 2000,
                                                         .IntegralLimit = 3000},
-        .speed_PID = {.Improve = 0,
-                        .Kp = 30,
+        .speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter,
+                        .Kp = 20,
                         .Ki = 1,
                         .Kd = 0,
                         .DeadBand = 0,
@@ -233,13 +234,17 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = 0,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
-                                                        .IntegralLimit = 3000}
+                                                        .IntegralLimit = 3000,
+                                                        // .Max_Accel = 40000.0f,
+                                                        // .speedlimit = 20000.0f
+                                                        .Max_Accel = Max_accel_t,
+                                                        .speedlimit = Speed_limit_t}
         }
     };
 
@@ -258,13 +263,17 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = 0,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
-                                                        .IntegralLimit = 3000},
+                                                        .IntegralLimit = 3000,
+                                                        // .Max_Accel = 40000.0f,
+                                                        // .speedlimit = 20000.0f
+                                                        .Max_Accel = Max_accel_t,
+                                                        .speedlimit = Speed_limit_t},
         }
     };
 
@@ -283,13 +292,17 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = 0,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
-                                                        .IntegralLimit = 3000},
+                                                        .IntegralLimit = 3000,
+                                                        // .Max_Accel = 40000.0f,
+                                                        // .speedlimit = 20000.0f
+                                                        .Max_Accel = Max_accel_t,
+                                                        .speedlimit = Speed_limit_t},
         }
     };
 
@@ -308,13 +321,17 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = 0,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration, 
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
-                                                        .IntegralLimit = 3000},
+                                                        .IntegralLimit = 3000,
+                                                        // .Max_Accel = 40000.0f,
+                                                        // .speedlimit = 20000.0f
+                                                        .Max_Accel = Max_accel_t,
+                                                        .speedlimit = Speed_limit_t},
         }
     };
 
@@ -338,6 +355,7 @@ void ChassisInit()
         .Kd = 0,
         .MaxOut = 15,
         .IntegralLimit = 3000,
+        .Improve = PID_Integral_Limit | PID_DerivativeFilter
     },
     };
 
@@ -372,7 +390,6 @@ void ChassisInit()
 #endif                                          // CHASSIS_BOARD
 
 #ifdef ONE_BOARD // 单板控制整车,则通过pubsub来传递消息
-    Chassis_IMU_data = INS_Init(); // 底盘IMU初始化
     chassis_sub = SubRegister("chassis_cmd", sizeof(Chassis_Ctrl_Cmd_s));
     chassis_pub = PubRegister("chassis_feed", sizeof(Chassis_Upload_Data_s));
     GimbalBase_Pub = PubRegister("GimbalBase_feed", sizeof(float));
@@ -399,7 +416,7 @@ static void LimitChassisOutput()
     DJIMotorSetRef(First_M3508_motor, chassis_handle.motor_set_speed[0]);
     DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
     DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
-    DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
+    DJIMotorSetRef(Fourth_M3508_motor, -chassis_handle.motor_set_speed[3]);
     DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_angle);
     
 }

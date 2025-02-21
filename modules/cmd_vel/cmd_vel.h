@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:35:00
  * @LastEditors:  
- * @LastEditTime: 2025-02-04 19:24:51
+ * @LastEditTime: 2025-02-19 18:18:28
  */
 #ifndef CMD_VEL_H
 #define CMD_VEL_H
@@ -24,6 +24,18 @@ typedef struct
     float z;
 } Vector3;  //通用三维向量结构体
 
+typedef enum
+{
+    CHASSIS_ROTATE_S = 0,
+    CHASSIS_NO_FOLLOW_S = 1,
+    CHASSIS_FOLLOW_GIMBAL_YAW_S = 2,
+} Chassis_mode_t;
+
+typedef enum
+{
+    REMOTE_MODE_S = 0,
+    RADA_MODE_S = 1,
+} Chassis_State_t;
 
 typedef struct 
 {

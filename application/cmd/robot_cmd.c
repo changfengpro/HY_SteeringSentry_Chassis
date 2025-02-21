@@ -57,48 +57,7 @@ BMI088Instance *bmi088_test; // 云台IMU
 BMI088_Data_t bmi088_data;
 void RobotCMDInit()
 {
-    // BMI088_Init_Config_s bmi088_config = {
-    //     .cali_mode = BMI088_CALIBRATE_ONLINE_MODE,
-    //     .work_mode = BMI088_BLOCK_TRIGGER_MODE,
-    //     .spi_acc_config = {
-    //         .spi_handle = &hspi1,
-    //         .GPIOx = GPIOA,
-    //         .cs_pin = GPIO_PIN_4,
-    //         .spi_work_mode = SPI_DMA_MODE,
-    //     },
-    //     .acc_int_config = {
-    //         .GPIOx = GPIOC,
-    //         .GPIO_Pin = GPIO_PIN_4,
-    //         .exti_mode = GPIO_EXTI_MODE_RISING,
-    //     },
-    //     .spi_gyro_config = {
-    //         .spi_handle = &hspi1,
-    //         .GPIOx = GPIOB,
-    //         .cs_pin = GPIO_PIN_0,
-    //         .spi_work_mode = SPI_DMA_MODE,
-    //     },
-    //     .gyro_int_config = {
-    //         .GPIO_Pin = GPIO_PIN_5,
-    //         .GPIOx = GPIOC,
-    //         .exti_mode = GPIO_EXTI_MODE_RISING,
-    //     },
-    //     .heat_pwm_config = {
-    //         .htim = &htim10,
-    //         .channel = TIM_CHANNEL_1,
-    //         .period = 1,
-    //     },
-    //     .heat_pid_config = {
-    //         .Kp = 0.5,
-    //         .Ki = 0,
-    //         .Kd = 0,
-    //         .DeadBand = 0.1,
-    //         .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
-    //         .IntegralLimit = 100,
-    //         .MaxOut = 100,
-    //     },
-    // };
-    //bmi088_test = BMI088Register(&bmi088_config);
-    rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
+
     radar_data = CmdVelControlInit(&huart1);
     // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
 
@@ -375,8 +334,8 @@ void RobotCMDTask()
         RadarControlSet();
     else if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[下],遥控器控制
         RemoteControlSet();
-
-    EmergencyHandler(); // 处理模块离线和遥控器急停等紧急情况
+    RadarControlSet();
+    // EmergencyHandler(); // 处理模块离线和遥控器急停等紧急情况
 
     // 设置视觉发送数据,还需增加加速度和角速度数据
     // VisionSetFlag(chassis_fetch_data.enemy_color,,chassis_fetch_data.bullet_speed)

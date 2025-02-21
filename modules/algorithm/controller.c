@@ -60,6 +60,34 @@ static void f_Integral_Limit(PIDInstance *pid)
     }
 }
 
+
+//速度梯形加速/减速控制
+
+static void f_TrapezoidAccelerationDeceleration(PIDInstance *pid)
+{
+    float desiredChange = pid->TargetOutput - pid->CurrentOutput;
+    float deltaTime = pid->dt;
+
+    // 根据加速度限制计算出最大允许的变化量
+    float maxChangeByAccel = pid->AccelerationLimit * deltaTime;
+    float actualChange = desiredChange;
+
+    // 限制变化量不超过加速度限制
+    if (fabs(actualChange) > fabs(maxChangeByAccel))
+        actualChange = maxChangeByAccel * (desiredChange > 0 ? 1 : -1);
+
+    // 限制速度不超过预设的速度限制
+    if (fabs(actualChange / deltaTime) > pid->SpeedLimit)
+        actualChange = pid->SpeedLimit * deltaTime * (desiredChange > 0 ? 1 : -1);
+
+    // 更新当前输出
+    pid->CurrentOutput += actualChange;
+
+    // 调整输出以确保不超过目标
+    if (fabs(pid->CurrentOutput - pid->TargetOutput) < fabs(0.1 * actualChange))
+        pid->CurrentOutput = pid->TargetOutput;
+}
+
 // 微分先行(仅使用反馈值而不计参考输入的微分)
 static void f_Derivative_On_Measurement(PIDInstance *pid)
 {
@@ -134,6 +162,8 @@ void PIDInit(PIDInstance *pid, PID_Init_Config_s *config)
     // utilize the quality of struct that its memeory is continuous
     memcpy(pid, config, sizeof(PID_Init_Config_s));
     // set rest of memory to 0
+    pid->AccelerationLimit = config->Max_Accel;
+    pid->SpeedLimit = config->speedlimit;
     DWT_GetDeltaT(&pid->DWT_CNT);
 }
 
@@ -165,6 +195,7 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
         pid->ITerm = pid->Ki * pid->Err * pid->dt;
         pid->Dout = pid->Kd * (pid->Err - pid->Last_Err) / pid->dt;
 
+ 
         // 梯形积分
         if (pid->Improve & PID_Trapezoid_Intergral)
             f_Trapezoid_Intergral(pid);
@@ -180,7 +211,7 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
         // 积分限幅
         if (pid->Improve & PID_Integral_Limit)
             f_Integral_Limit(pid);
-
+        
         pid->Iout += pid->ITerm;                         // 累加积分
         pid->Output = pid->Pout + pid->Iout + pid->Dout; // 计算输出
 
@@ -196,6 +227,15 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
         pid->Output = 0;
         pid->ITerm = 0;
     }
+
+    // 梯形加减速
+    if (pid->Improve & PIDTrapezoidAccelerationDeceleration) 
+        {
+            pid->TargetOutput = pid->Output; // 设置目标输出为PID计算的结果
+            f_TrapezoidAccelerationDeceleration(pid); // 应用梯形加减速
+            pid->Output = pid->CurrentOutput; // 更新PID输出为平滑后的结果
+        }
+
 
     // 保存当前数据,用于下次计算
     pid->Last_Measure = pid->Measure;
