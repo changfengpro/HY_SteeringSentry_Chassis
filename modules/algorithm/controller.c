@@ -10,6 +10,7 @@
  */
 #include "controller.h"
 #include "memory.h"
+#include "math.h"
 
 /* ----------------------------下面是pid优化环节的实现---------------------------- */
 
@@ -121,6 +122,96 @@ static void f_Output_Limit(PIDInstance *pid)
     }
 }
 
+// 斜坡速度规划
+
+static void f_slope_acceleration_deceleration(PIDInstance *pid, float *target, float *now_real)
+{
+    if(pid->slope.slope_first == SLOPE_FIRST_REAL)  // 如果初始状态为真实值优先
+    {
+        if(pid->slope.target >= pid->slope.now_real && pid->slope.now_real >= pid->slope.now_planning || // 如果目标值大于等于当前真实值且当前真实值大于等于当前规划值
+           pid->slope.target <= pid->slope.now_real && pid->slope.now_real <= pid->slope.now_planning) // 或者目标值小于等于当前真实值且当前真实值小于等于当前规划值
+        {
+            pid->slope.out = pid->slope.now_real;   // 输出值为当前真实值
+        }
+    }
+
+    if(pid->slope.now_planning > 0.0f) // 如果当前规划值大于0
+    {
+        if(pid->slope.target > pid->slope.now_planning) // 如果目标值大于当前规划值
+        {
+            //正值加速
+            if(fabs(pid->slope.now_planning - pid->slope.target) > pid->slope.increase_value)
+            {
+                pid->slope.out += pid->slope.increase_value;
+            }
+            else
+            {
+                pid->slope.out = pid->slope.target;
+            }
+        }
+        else if(pid->slope.target < pid->slope.now_planning) // 如果目标值小于当前规划值
+        {
+            //正值减速
+            if(fabs(pid->slope.now_planning - pid->slope.target) > pid->slope.decrease_value)
+            {
+                pid->slope.out -= pid->slope.decrease_value;
+            }
+            else
+            {
+                pid->slope.out = pid->slope.target;
+            }
+        }
+    }
+    else if(pid->slope.now_planning < 0.0f) // 如果当前规划值小于0
+    {
+        if(pid->slope.target < pid->slope.now_planning) // 如果目标值小于当前规划值
+        {
+            //负值加速
+            if(fabs(pid->slope.now_planning - pid->slope.target) > pid->slope.increase_value)
+            {
+                pid->slope.out -= pid->slope.increase_value;
+            }
+            else
+            {
+                pid->slope.out = pid->slope.target;
+            }
+        }
+        else if(pid->slope.target > pid->slope.now_planning) // 如果目标值大于当前规划值
+        {
+            //负值减速
+            if(fabs(pid->slope.now_planning - pid->slope.target) > pid->slope.decrease_value)
+            {
+                pid->slope.out += pid->slope.decrease_value;
+            }
+            else
+            {
+                pid->slope.out = pid->slope.target;
+            }
+        }
+    }
+    else
+    {
+        if(pid->slope.target > pid->slope.now_planning) // 如果目标值大于规划值
+        {
+            // 0值负加速
+            if(fabs(pid->slope.now_planning - pid->slope.target) > pid->slope.increase_value)
+            {
+                pid->slope.out -= pid->slope.increase_value;
+            }
+            else
+            {
+                pid->slope.out = pid->slope.target;
+            }
+        }
+    }
+
+    // 更新当前规划值
+    pid->slope.now_planning = pid->slope.out;
+
+    return pid->slope.out;
+    
+}
+
 // 电机堵转检测
 static void f_PID_ErrorHandle(PIDInstance *pid)
 {
@@ -229,7 +320,7 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
     }
 
     // 梯形加减速
-    if (pid->Improve & PIDTrapezoidAccelerationDeceleration) 
+    if (pid->Improve & PIDSlopeAccelerationDeceleration) 
         {
             pid->TargetOutput = pid->Output; // 设置目标输出为PID计算的结果
             f_TrapezoidAccelerationDeceleration(pid); // 应用梯形加减速
@@ -246,3 +337,5 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
 
     return pid->Output;
 }
+
+/* --------------------------- 斜坡速度规划 ----------------------------- */

@@ -37,8 +37,30 @@ typedef enum
     PID_ChangingIntegrationRate = 0b00100000,     // 0010 0000
     PID_DerivativeFilter = 0b01000000,            // 0100 0000
     PID_ErrorHandle = 0b10000000,                 // 1000 0000
-    PIDTrapezoidAccelerationDeceleration = 0b100000000,    // 1000 0000 0000
+    PIDSlopeAccelerationDeceleration = 0b100000000,    // 1000 0000 0000
 } PID_Improvement_e;
+
+/* -------------------------斜坡规划结构体---------------------------- */
+// 定义坡度相关的枚举
+typedef enum {
+    SLOPE_FIRST_REAL, // 真实值优先
+    // 可以添加其他状态
+} enum_slope_first;
+
+// 定义一个结构体来代表坡度
+typedef struct {
+    float increase_value; // 增长最大幅度
+    float decrease_value; // 降低最大幅度
+    enum_slope_first slope_first; // 初始坡度状态
+    float target; // 目标值
+    float now_real; // 当前真实值
+    float now_planning; // 当前规划值
+    float out; // 输出值
+} slope_s;
+
+
+/* ---------------------------------------------------------------- */
+
 
 /* PID 报错类型枚举*/
 typedef enum errorType_e
@@ -94,6 +116,9 @@ typedef struct
     float CurrentOutput;
     float SpeedLimit;     // 输出变化的最大速度
     float AccelerationLimit; // 输出变化的最大加速度
+
+    // 斜坡速度规划
+    slope_s slope;
 
     float Ref;
 
