@@ -234,7 +234,7 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PID_SlopeAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
@@ -244,7 +244,12 @@ void ChassisInit()
                                                         // .Max_Accel = 40000.0f,
                                                         // .speedlimit = 20000.0f
                                                         .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t}
+                                                        .speedlimit = Speed_limit_t,
+                                                        .slope = {.decrease_value = 50,
+                                                                  .increase_value = 50,
+                                                                  .slope_first = SLOPE_FIRST_REAL
+                                                                 }
+                                                        }              
         }
     };
 
@@ -263,7 +268,7 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PID_SlopeAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
@@ -273,7 +278,12 @@ void ChassisInit()
                                                         // .Max_Accel = 40000.0f,
                                                         // .speedlimit = 20000.0f
                                                         .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t},
+                                                        .speedlimit = Speed_limit_t,
+                                                        .slope = {.decrease_value = 50,
+                                                                  .increase_value = 50,
+                                                                  .slope_first = SLOPE_FIRST_REAL
+                                                                 }
+                                                        },
         }
     };
 
@@ -292,7 +302,7 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration,
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PID_SlopeAccelerationDeceleration,
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
@@ -302,7 +312,12 @@ void ChassisInit()
                                                         // .Max_Accel = 40000.0f,
                                                         // .speedlimit = 20000.0f
                                                         .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t},
+                                                        .speedlimit = Speed_limit_t,
+                                                        .slope = {.decrease_value = 50,
+                                                                  .increase_value = 50,
+                                                                  .slope_first = SLOPE_FIRST_REAL
+                                                                 }
+                                                        },
         }
     };
 
@@ -321,7 +336,7 @@ void ChassisInit()
             .speed_feedback_source = MOTOR_FEED,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL
         },
-        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PIDTrapezoidAccelerationDeceleration, 
+        .controller_param_init_config = {.speed_PID = {.Improve = PID_Integral_Limit | PID_DerivativeFilter | PID_SlopeAccelerationDeceleration, 
                                                         .Kp = 2.5,
                                                         .Ki = 1,
                                                         .Kd = 0,
@@ -331,7 +346,12 @@ void ChassisInit()
                                                         // .Max_Accel = 40000.0f,
                                                         // .speedlimit = 20000.0f
                                                         .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t},
+                                                        .speedlimit = Speed_limit_t,
+                                                        .slope = {.decrease_value = 50,
+                                                                  .increase_value = 50,
+                                                                  .slope_first = SLOPE_FIRST_REAL
+                                                                 }
+                                                        },
         }
     };
 

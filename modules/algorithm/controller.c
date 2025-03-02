@@ -126,6 +126,9 @@ static void f_Output_Limit(PIDInstance *pid)
 
 static void f_slope_acceleration_deceleration(PIDInstance *pid, float *target, float *now_real)
 {
+    pid->slope.target = *target;
+    pid->slope.now_real = *now_real;
+
     if(pid->slope.slope_first == SLOPE_FIRST_REAL)  // 如果初始状态为真实值优先
     {
         if(pid->slope.target >= pid->slope.now_real && pid->slope.now_real >= pid->slope.now_planning || // 如果目标值大于等于当前真实值且当前真实值大于等于当前规划值
@@ -208,7 +211,7 @@ static void f_slope_acceleration_deceleration(PIDInstance *pid, float *target, f
     // 更新当前规划值
     pid->slope.now_planning = pid->slope.out;
 
-    return pid->slope.out;
+    *target = pid->slope.out;
     
 }
 
@@ -253,8 +256,13 @@ void PIDInit(PIDInstance *pid, PID_Init_Config_s *config)
     // utilize the quality of struct that its memeory is continuous
     memcpy(pid, config, sizeof(PID_Init_Config_s));
     // set rest of memory to 0
+    
     pid->AccelerationLimit = config->Max_Accel;
     pid->SpeedLimit = config->speedlimit;
+
+    pid->slope.decrease_value = config->slope.decrease_value;
+    pid->slope.increase_value = config->slope.increase_value;
+
     DWT_GetDeltaT(&pid->DWT_CNT);
 }
 
@@ -273,6 +281,12 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
 
     pid->dt = DWT_GetDeltaT(&pid->DWT_CNT); // 获取两次pid计算的时间间隔,用于积分和微分
 
+    // 斜坡速度规划
+    if (pid->Improve & PID_SlopeAccelerationDeceleration) 
+    {
+        f_slope_acceleration_deceleration(pid, &ref, &measure);
+    }
+
     // 保存上次的测量值和误差,计算当前error
     pid->Measure = measure;
     pid->Ref = ref;
@@ -280,7 +294,7 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
 
     // 如果在死区外,则计算PID
     if (abs(pid->Err) > pid->DeadBand)
-    {
+    {   
         // 基本的pid计算,使用位置式
         pid->Pout = pid->Kp * pid->Err;
         pid->ITerm = pid->Ki * pid->Err * pid->dt;
@@ -319,13 +333,7 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
         pid->ITerm = 0;
     }
 
-    // 梯形加减速
-    if (pid->Improve & PIDSlopeAccelerationDeceleration) 
-        {
-            pid->TargetOutput = pid->Output; // 设置目标输出为PID计算的结果
-            f_TrapezoidAccelerationDeceleration(pid); // 应用梯形加减速
-            pid->Output = pid->CurrentOutput; // 更新PID输出为平滑后的结果
-        }
+
 
 
     // 保存当前数据,用于下次计算

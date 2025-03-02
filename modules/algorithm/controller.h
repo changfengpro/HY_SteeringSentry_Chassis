@@ -37,7 +37,7 @@ typedef enum
     PID_ChangingIntegrationRate = 0b00100000,     // 0010 0000
     PID_DerivativeFilter = 0b01000000,            // 0100 0000
     PID_ErrorHandle = 0b10000000,                 // 1000 0000
-    PIDSlopeAccelerationDeceleration = 0b100000000,    // 1000 0000 0000
+    PID_SlopeAccelerationDeceleration = 0b100000000,    // 1000 0000 0000
 } PID_Improvement_e;
 
 /* -------------------------斜坡规划结构体---------------------------- */
@@ -147,6 +147,10 @@ typedef struct // config parameter
     float Derivative_LPF_RC;
     float Max_Accel;
     float speedlimit;
+
+    slope_s slope; // 斜坡速度规划结构体
+
+
 } PID_Init_Config_s;
 
 /**

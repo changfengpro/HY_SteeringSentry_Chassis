@@ -58,7 +58,7 @@ BMI088_Data_t bmi088_data;
 void RobotCMDInit()
 {
 
-    radar_data = CmdVelControlInit(&huart1);
+    radar_data = CmdVelControlInit(&huart6);
     // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
 
     gimbal_cmd_pub = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
