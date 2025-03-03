@@ -62,33 +62,6 @@ static void f_Integral_Limit(PIDInstance *pid)
 }
 
 
-//速度梯形加速/减速控制
-
-static void f_TrapezoidAccelerationDeceleration(PIDInstance *pid)
-{
-    float desiredChange = pid->TargetOutput - pid->CurrentOutput;
-    float deltaTime = pid->dt;
-
-    // 根据加速度限制计算出最大允许的变化量
-    float maxChangeByAccel = pid->AccelerationLimit * deltaTime;
-    float actualChange = desiredChange;
-
-    // 限制变化量不超过加速度限制
-    if (fabs(actualChange) > fabs(maxChangeByAccel))
-        actualChange = maxChangeByAccel * (desiredChange > 0 ? 1 : -1);
-
-    // 限制速度不超过预设的速度限制
-    if (fabs(actualChange / deltaTime) > pid->SpeedLimit)
-        actualChange = pid->SpeedLimit * deltaTime * (desiredChange > 0 ? 1 : -1);
-
-    // 更新当前输出
-    pid->CurrentOutput += actualChange;
-
-    // 调整输出以确保不超过目标
-    if (fabs(pid->CurrentOutput - pid->TargetOutput) < fabs(0.1 * actualChange))
-        pid->CurrentOutput = pid->TargetOutput;
-}
-
 // 微分先行(仅使用反馈值而不计参考输入的微分)
 static void f_Derivative_On_Measurement(PIDInstance *pid)
 {
@@ -214,6 +187,45 @@ static void f_slope_acceleration_deceleration(PIDInstance *pid, float *target, f
     *target = pid->slope.out;
     
 }
+
+// fhan跟踪微分器函数
+static float fhan(float x1, float x2, float v, float r, float h0, float h) 
+{
+    float e = x1 - v;  // 误差
+    float d = r * h0;  // 计算参数d
+    float a0 = h * x2;  // 积分项
+    float y = e + a0;   // 中间变量y
+
+    // 计算中间变量a1和a2
+    float a1 = sqrtf(d * (d + 8 * fabsf(y)));
+    float a2 = a0 + (y > 0 ? 1 : -1) * (a1 - d) / 2;
+
+    // 根据y的大小选择a的值
+    float a;
+    if (fabsf(y) > d) {
+        a = a2;
+    } else {
+        a = a0 + y / h0;
+    }
+
+    // 计算控制量f
+    float f;
+    if (fabsf(a) > d) {
+        f = -r * (a > 0 ? 1 : -1);
+    } else {
+        f = -r * a / d;
+    }
+
+    return f;
+}
+
+// 状态更新函数
+static void TD_Update(float *x1, float *x2, float v, float r, float h0, float h) {
+    float f = fhan(*x1, *x2, v, r, h0, h);
+    *x1 += h * (*x2);  // 更新x1
+    *x2 += h * f;      // 更新x2
+}
+
 
 // 电机堵转检测
 static void f_PID_ErrorHandle(PIDInstance *pid)
@@ -346,4 +358,3 @@ float PIDCalculate(PIDInstance *pid, float measure, float ref)
     return pid->Output;
 }
 
-/* --------------------------- 斜坡速度规划 ----------------------------- */
