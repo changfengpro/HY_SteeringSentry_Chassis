@@ -494,7 +494,7 @@ static void Steer_Speed_Calcu(ChassisHandle_t *chassis_handle, float chassis_vx,
     chassis_handle->chassis_motor_speed[0] = sqrt( pow(chassis_vx - steer_wz * RADIUS * cos(theta), 2) + pow(chassis_vy + steer_wz * RADIUS * sin(theta), 2)) * WHEEL_RPM_RATION;
     chassis_handle->chassis_motor_speed[1] = sqrt( pow(chassis_vx - steer_wz * RADIUS * cos(theta), 2) + pow(chassis_vy - steer_wz * RADIUS * sin(theta), 2)) * WHEEL_RPM_RATION; 
     chassis_handle->chassis_motor_speed[2] = sqrt( pow(chassis_vx + steer_wz * RADIUS * cos(theta), 2) + pow(chassis_vy - steer_wz * RADIUS * sin(theta), 2)) * WHEEL_RPM_RATION;
-    chassis_handle->chassis_motor_speed[3] = sqrt( pow(chassis_vx + steer_wz * RADIUS * cos(theta), 2) + pow(chassis_vy + steer_wz * RADIUS * sin(theta), 2)) * WHEEL_RPM_RATION;
+    chassis_handle->chassis_motor_speed[3] = -sqrt( pow(chassis_vx + steer_wz * RADIUS * cos(theta), 2) + pow(chassis_vy + steer_wz * RADIUS * sin(theta), 2)) * WHEEL_RPM_RATION;
 
     //寻找转速最大值，以及实现正反转
     for(int i = 0; i < 4; i++)
