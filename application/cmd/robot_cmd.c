@@ -60,6 +60,7 @@ void RobotCMDInit()
 
     radar_data = CmdVelControlInit(&huart6);
     // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
+    rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
 
     gimbal_cmd_pub = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
     gimbal_feed_sub = SubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
