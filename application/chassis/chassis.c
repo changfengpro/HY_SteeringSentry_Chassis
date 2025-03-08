@@ -60,7 +60,7 @@ static float chassis_vx, chassis_vy;                      // 将云台系的速�
 static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算后的临时输出,待进行限幅
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
-static float Init_angle[4] = { 1.0f , -144.0f , 3.0f , -16.0f };
+float Init_angle[4] = { 1.0f , 110.0f , 13.0f , 0.0f };
 static float Yaw_single_angle, Yaw_angle_sum;
 
 
@@ -369,14 +369,26 @@ void ChassisInit()
     .can_init_config.rx_id = 0x10,
     .can_init_config.tx_id = 0x20F,
 
-    .controller_param_init_config.angle_PID = {
-        .Kp = 1.5,
-        .Ki = 0,
-        .Kd = 0,
-        .MaxOut = 15,
-        .IntegralLimit = 3000,
-        .Improve = PID_Integral_Limit | PID_DerivativeFilter
-    },
+    .controller_param_init_config = {
+
+        .angle_PID = {
+            .Kp = 0.3,
+            .Ki = 0,
+            .Kd = 0,
+            .MaxOut = 30,
+            .IntegralLimit = 15,
+            .Improve = PID_Integral_Limit | PID_DerivativeFilter
+        },
+
+        .speed_PID = {
+            .Kp = 5,
+            .Ki = 0.1,
+            .Kd = 0,
+            .MaxOut = 50,
+            .IntegralLimit = 15,
+            .IntegralLimit = PID_Integral_Limit | PID_DerivativeFilter
+        }
+    }
     };
 
     First_GM6020_motor  = DJIMotorInit(&chassis_first_GM6020_motor_config);

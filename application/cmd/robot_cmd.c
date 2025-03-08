@@ -60,6 +60,7 @@ void RobotCMDInit()
 
     radar_data = CmdVelControlInit(&huart6);
     // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
+    rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
 
     gimbal_cmd_pub = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
     gimbal_feed_sub = SubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
@@ -174,8 +175,8 @@ static void RemoteControlSet()
     // 云台软件限位
     
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
-    chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r1 / 1.5; // 1数值方向
-    chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r_ / 1.5; // _水平方向
+    chassis_cmd_send.vx = -(float)rc_data[TEMP].rc.rocker_r1 / 2; // 1数值方向
+    chassis_cmd_send.vy = -(float)rc_data[TEMP].rc.rocker_r_ / 2; // _水平方向
     chassis_cmd_send.gimbal_angle += -0.001 * (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
     // 发射参数
     // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
@@ -334,7 +335,7 @@ void RobotCMDTask()
         RadarControlSet();
     else if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 遥控器左侧开关状态为[下],遥控器控制
         RemoteControlSet();
-    RadarControlSet();
+    // RadarControlSet();
     // EmergencyHandler(); // 处理模块离线和遥控器急停等紧急情况
 
     // 设置视觉发送数据,还需增加加速度和角速度数据
