@@ -1,3 +1,12 @@
+/*
+ * @Description: 
+ * @Author: changfeng
+ * @brief: 
+ * @version: 
+ * @Date: 2025-03-08 20:16:25
+ * @LastEditors:  
+ * @LastEditTime: 2025-03-09 13:52:32
+ */
 /**
  * @file chassis.c
  * @author NeoZeng neozng1@hnu.edu.cn
@@ -82,8 +91,8 @@ ChassisHandle_t chassis_handle;
 void ChassisInit()
 {
     Chassis_IMU_data = INS_Init(); // 底盘IMU初始化
-    static float Max_accel_t = 40000;
-    static float Speed_limit_t = 15000;
+    float gimbal_base_angle_feed_ptr = Chassis_IMU_data->YawTotalAngle;
+
     Motor_Init_Config_s chassis_first_GM6020_motor_config =       //first表示第一象限， second表示第二象限，以此类推
     {
         .motor_type = GM6020,
@@ -241,10 +250,6 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        // .Max_Accel = 40000.0f,
-                                                        // .speedlimit = 20000.0f
-                                                        .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t,
                                                         .slope = {.decrease_value = 50,
                                                                   .increase_value = 50,
                                                                   .slope_first = SLOPE_FIRST_REAL
@@ -275,10 +280,6 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        // .Max_Accel = 40000.0f,
-                                                        // .speedlimit = 20000.0f
-                                                        .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t,
                                                         .slope = {.decrease_value = 50,
                                                                   .increase_value = 50,
                                                                   .slope_first = SLOPE_FIRST_REAL
@@ -309,10 +310,6 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        // .Max_Accel = 40000.0f,
-                                                        // .speedlimit = 20000.0f
-                                                        .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t,
                                                         .slope = {.decrease_value = 50,
                                                                   .increase_value = 50,
                                                                   .slope_first = SLOPE_FIRST_REAL
@@ -343,10 +340,6 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        // .Max_Accel = 40000.0f,
-                                                        // .speedlimit = 20000.0f
-                                                        .Max_Accel = Max_accel_t,
-                                                        .speedlimit = Speed_limit_t,
                                                         .slope = {.decrease_value = 50,
                                                                   .increase_value = 50,
                                                                   .slope_first = SLOPE_FIRST_REAL
@@ -357,12 +350,13 @@ void ChassisInit()
 
     Motor_Init_Config_s DMmotor_Motor_Config = {
     .controller_setting_init_config.angle_feedback_source = MOTOR_FEED,
-    .controller_setting_init_config.close_loop_type = SPEED_LOOP,
+    .controller_setting_init_config.close_loop_type = ANGLE_LOOP,
     .controller_setting_init_config.feedback_reverse_flag = FEEDBACK_DIRECTION_NORMAL,
     .controller_setting_init_config.feedforward_flag = SPEED_FEEDFORWARD,
     .controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
-    .controller_setting_init_config.outer_loop_type = SPEED_LOOP,
+    .controller_setting_init_config.outer_loop_type = ANGLE_LOOP,
     .controller_setting_init_config.speed_feedback_source = MOTOR_FEED,
+    .controller_param_init_config.other_angle_feedback_ptr = &gimbal_base_angle_feed_ptr,
     .can_init_config.can_handle = &hcan1,
     // .can_init_config.can_module_callback = &DMMotorLostCallback,
     // .can_init_config.id = (void *)0x00,
@@ -487,7 +481,7 @@ static void ChassisHandle_Deliver_Config()
 static void Steer_Speed_Calcu(ChassisHandle_t *chassis_handle, float chassis_vx, float chassis_vy, float chassis_wz)
 {
     float theta = atan(1.0 / 1.0);  //返回45度
-    float steer_wz = chassis_wz * PI /180.0f;  //chassis_wz传入的是度/秒，转化为弧度制
+    float steer_wz = 15 * chassis_wz * PI /180.0f;  //chassis_wz传入的是度/秒，转化为弧度制
 
 
     //根据公式计算电机转速
@@ -615,6 +609,7 @@ static void YawAngleCalculate()
     Yaw_angle_sum = rad_sum * RAD_2_DEGREE;
     temp = fmodf(Yaw_angle_sum, 360.0);
     Yaw_single_angle = fabs(temp);
+    Gimbal_Base->measure.single_angle = Yaw_single_angle;
     Gimbal_Base->measure.total_angle = Yaw_angle_sum;
     last_angle = angle;
 }
@@ -623,7 +618,7 @@ static void YawAngleCalculate()
 /* 机器人底盘控制核心任务 */
 void ChassisTask()
 {   
-
+    chassis_feedback_data.chassis_imu_data = Chassis_IMU_data;
     YawAngleCalculate();    //yaw电机总角度计算
     // 后续增加没收到消息的处理(双板的情况)
     // 获取新的控制信息
@@ -668,10 +663,11 @@ void ChassisTask()
         chassis_cmd_recv.wz = 0;
         break;
     case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,不单独设置pid,以误差角度平方为速度输出
-        chassis_cmd_recv.wz = -1.5f * chassis_cmd_recv.offset_angle * abs(chassis_cmd_recv.offset_angle);
+        // DMMotorChangeFeed(Gimbal_Base, ANGLE_LOOP, OTHER_FEED);
+        // chassis_cmd_recv.wz = -1.5f * chassis_cmd_recv.offset_angle * abs(chassis_cmd_recv.offset_angle);
         break;
     case CHASSIS_ROTATE: // 自旋,同时保持全向机动;当前wz维持定值,后续增加不规则的变速策略
-        chassis_cmd_recv.wz = 20000;
+        chassis_cmd_recv.wz = 8000;
         break;
     case CHASSIS_RADAR: //  导航模式
         break;

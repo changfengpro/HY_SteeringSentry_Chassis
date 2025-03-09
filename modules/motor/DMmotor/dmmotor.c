@@ -112,8 +112,16 @@ void DMMotorStop(DMMotorInstance *motor)//不使用使能模式是因为需要�
 }
 
 void DMMotorOuterLoop(DMMotorInstance *motor, Closeloop_Type_e type)
-{
+{   
     motor->motor_settings.outer_loop_type = type;
+}
+
+void DMMotorChangeFeed(DMMotorInstance *motor, Closeloop_Type_e loop, Feedback_Source_e type)
+{
+    if(loop == ANGLE_LOOP)
+        motor->motor_settings.angle_feedback_source = type;
+    if(loop == SPEED_LOOP)
+        motor->motor_settings.speed_feedback_source = type;
 }
 
 
@@ -129,7 +137,7 @@ void DMMotorTask(void const *argument)
     DMMotor_Send_s motor_send_mailbox;
     while (1)
     {   
-        pid_measure = motor->measure.total_angle;
+        
         pid_ref = motor->pid_ref;
 
         if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
@@ -156,7 +164,16 @@ void DMMotorTask(void const *argument)
         // motor->motor_can_instace->tx_buff[7] = (uint8_t)(motor_send_mailbox.torque_des);
 
         /*位置环计算*/
-        pid_ref = PIDCalculate(&motor->angle_PID, pid_measure, pid_ref);
+        if((setting->close_loop_type & ANGLE_LOOP) && (setting->outer_loop_type & ANGLE_LOOP))
+        {
+            if(setting->angle_feedback_source == OTHER_FEED)
+                pid_measure = *motor->other_angle_feedback_ptr;
+            else
+                pid_measure = motor->measure.total_angle;
+
+            pid_ref = PIDCalculate(&motor->angle_PID, pid_measure, pid_ref);
+        }
+        
 
         set = pid_ref;
 

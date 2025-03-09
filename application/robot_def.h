@@ -191,7 +191,7 @@ typedef struct
     // float real_vx;
     // float real_vy;
     // float real_wz;
-
+    attitude_t *chassis_imu_data;
     uint8_t rest_heat;           // 剩余枪口热量
     Bullet_Speed_e bullet_speed; // 弹速限制
     Enemy_Color_e enemy_color;   // 0 for blue, 1 for red

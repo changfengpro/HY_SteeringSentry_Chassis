@@ -96,33 +96,10 @@ void RobotCMDInit()
 static void CalcOffsetAngle()
 {   
     SubGetMessage(GimbalBase_sub, &yaw_single_angle);
+    SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
     // 别名angle提高可读性,不然太长了不好看,虽然基本不会动这个函数
-    static float angle, last_angle, angle_sum, temp;
-    // angle = Yaw_angle; // 从云台获取的当前yaw电机角度
+    chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
     
-    // if(fabs(angle - last_angle) > 0.1)
-    // {
-    //     angle_sum += angle - last_angle;
-    // }
-    // temp = fmodf(angle_sum, 360.0);
-    // yaw_single_angle = fabs(temp);
-    // last_angle = angle;
-
-#if YAW_ECD_GREATER_THAN_4096                               // 如果大于180度
-    if (angle > YAW_ALIGN_ANGLE && angle <= 180.0f + YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else if (angle > 180.0f + YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE - 360.0f;
-    else
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-#else // 小于180度
-    if (angle > YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else if (angle <= YAW_ALIGN_ANGLE && angle >= YAW_ALIGN_ANGLE - 180.0f)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE + 360.0f;
-#endif
 }
 
 /**
@@ -144,7 +121,7 @@ static void RadarControlSet()
 static void RemoteControlSet()
 {
     // 控制底盘和云台运行模式,云台待添加,云台是否始终使用IMU数据?
-    if (switch_is_down(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[下],底盘跟随云台
+    if (switch_is_down(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[下],小陀螺
     {
         chassis_cmd_send.chassis_mode = CHASSIS_ROTATE;
         gimbal_cmd_send.gimbal_mode = GIMBAL_GYRO_MODE;
@@ -153,12 +130,14 @@ static void RemoteControlSet()
     {
         chassis_cmd_send.chassis_mode = CHASSIS_NO_FOLLOW;
         gimbal_cmd_send.gimbal_mode = GIMBAL_FREE_MODE;
+        chassis_cmd_send.gimbal_angle += -0.001 * (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
+    
     }
     else if(switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],跟随模式
     {
         chassis_cmd_send.chassis_mode = CHASSIS_FOLLOW_GIMBAL_YAW;
+        
     }
-
     // 云台参数,确定云台控制数据
     if (switch_is_mid(rc_data[TEMP].rc.switch_left)) // 左侧开关状态为[中],视觉模式
     {
@@ -177,7 +156,7 @@ static void RemoteControlSet()
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r1 / 2; // 1数值方向
     chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r_ / 2; // _水平方向
-    chassis_cmd_send.gimbal_angle += -0.001 * (float)rc_data[TEMP].rc.rocker_l_; //云台旋转速度
+    chassis_cmd_send.wz = (float)rc_data[TEMP].rc.rocker_l_ * 24;
     // 发射参数
     // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
     //     ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启

@@ -27,6 +27,7 @@ typedef struct
     float T_Rotor;
     int32_t total_round;
     float total_angle;
+    float single_angle;
 }DM_Motor_Measure_s;
 
 typedef struct
@@ -70,6 +71,8 @@ void DMMotorSetRef(DMMotorInstance *motor, float ref);
 void DMMotorOuterLoop(DMMotorInstance *motor,Closeloop_Type_e closeloop_type);
 
 void DMMotorEnable(DMMotorInstance *motor);
+
+void DMMotorChangeFeed(DMMotorInstance *motor, Closeloop_Type_e loop, Feedback_Source_e type);
 
 void DMMotorStop(DMMotorInstance *motor);
 void DMMotorCaliEncoder(DMMotorInstance *motor);
