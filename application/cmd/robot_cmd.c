@@ -98,7 +98,7 @@ static void CalcOffsetAngle()
     SubGetMessage(GimbalBase_sub, &yaw_single_angle);
     SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
     // 别名angle提高可读性,不然太长了不好看,虽然基本不会动这个函数
-    chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
+    // chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
     
 }
 
@@ -154,9 +154,9 @@ static void RemoteControlSet()
     // 云台软件限位
     
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
-    chassis_cmd_send.vx = (float)rc_data[TEMP].rc.rocker_r1 / 2; // 1数值方向
-    chassis_cmd_send.vy = (float)rc_data[TEMP].rc.rocker_r_ / 2; // _水平方向
-    chassis_cmd_send.wz = (float)rc_data[TEMP].rc.rocker_l_ * 24;
+    chassis_cmd_send.vx =  (float)rc_data[TEMP].rc.rocker_r1 / 2; // 1数值方向
+    chassis_cmd_send.vy =  (float)rc_data[TEMP].rc.rocker_r_ / 2; // _水平方向
+    chassis_cmd_send.wz = -(float)rc_data[TEMP].rc.rocker_l_ * 24;
     // 发射参数
     // if (switch_is_up(rc_data[TEMP].rc.switch_right)) // 右侧开关状态[上],弹舱打开
     //     ;                                            // 弹舱舵机控制,待添加servo_motor模块,开启
