@@ -96,33 +96,8 @@ void RobotCMDInit()
 static void CalcOffsetAngle()
 {   
     SubGetMessage(GimbalBase_sub, &yaw_single_angle);
-    // 别名angle提高可读性,不然太长了不好看,虽然基本不会动这个函数
-    static float angle, last_angle, angle_sum, temp;
-    // angle = Yaw_angle; // 从云台获取的当前yaw电机角度
-    
-    // if(fabs(angle - last_angle) > 0.1)
-    // {
-    //     angle_sum += angle - last_angle;
-    // }
-    // temp = fmodf(angle_sum, 360.0);
-    // yaw_single_angle = fabs(temp);
-    // last_angle = angle;
-
-#if YAW_ECD_GREATER_THAN_4096                               // 如果大于180度
-    if (angle > YAW_ALIGN_ANGLE && angle <= 180.0f + YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else if (angle > 180.0f + YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE - 360.0f;
-    else
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-#else // 小于180度
-    if (angle > YAW_ALIGN_ANGLE)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else if (angle <= YAW_ALIGN_ANGLE && angle >= YAW_ALIGN_ANGLE - 180.0f)
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE;
-    else
-        chassis_cmd_send.offset_angle = angle - YAW_ALIGN_ANGLE + 360.0f;
-#endif
+    SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
+    chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
 }
 
 /**

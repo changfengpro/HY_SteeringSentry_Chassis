@@ -155,8 +155,6 @@ typedef struct // config parameter
     float CoefB;         // ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
     float Output_LPF_RC; // RC = 1/omegac
     float Derivative_LPF_RC;
-    float Max_Accel;
-    float speedlimit;
 
     slope_s slope; // 斜坡速度规划结构体
 
