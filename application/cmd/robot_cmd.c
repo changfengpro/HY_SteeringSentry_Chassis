@@ -10,6 +10,7 @@
 #include "dji_motor.h"
 #include "bmi088.h"
 #include "cmd_vel.h"
+#include "rm_referee.h"
 // bsp
 #include "bsp_dwt.h"
 #include "bsp_log.h"
@@ -37,6 +38,7 @@ static RC_ctrl_t *rc_data;              // 遥控器数据,初始化时返回
 static Radar_Data *radar_data;          //导航数据，初始化时返回
 static Vision_Recv_s *vision_recv_data; // 视觉接收数据指针,初始化时返回
 static Vision_Send_s vision_send_data;  // 视觉发送数据
+static referee_info_t *referee_recv_data; // 裁判系统数据
 
 static Publisher_t *gimbal_cmd_pub;            // 云台控制消息发布者
 static Subscriber_t *gimbal_feed_sub;          // 云台反馈信息订阅者
@@ -58,10 +60,10 @@ BMI088_Data_t bmi088_data;
 void RobotCMDInit()
 {
 
-    radar_data = CmdVelControlInit(&huart6);
+    radar_data = CmdVelControlInit(&huart1);
     // vision_recv_data = VisionInit(&huart1); // 视觉通信串口
     rc_data = RemoteControlInit(&huart3);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
-
+    referee_recv_data = RefereeInit(&huart6);
     gimbal_cmd_pub = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
     gimbal_feed_sub = SubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
     shoot_cmd_pub = PubRegister("shoot_cmd", sizeof(Shoot_Ctrl_Cmd_s));
@@ -98,6 +100,15 @@ static void CalcOffsetAngle()
     SubGetMessage(GimbalBase_sub, &yaw_single_angle);
     SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
     chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
+}
+
+static void DeterminRobotID()
+{
+    // id小于7是红色,大于7是蓝色,0为红色，1为蓝色   #define Robot_Red 0    #define Robot_Blue 1
+    referee_recv_data->referee_id.Robot_Color = referee_recv_data->GameRobotState.robot_id > 7 ? Robot_Blue : Robot_Red;
+    referee_recv_data->referee_id.Robot_ID = referee_recv_data->GameRobotState.robot_id;
+    referee_recv_data->referee_id.Cilent_ID = 0x0100 + referee_recv_data->referee_id.Robot_ID; // 计算客户端ID
+    referee_recv_data->referee_id.Receiver_Robot_ID = 0;
 }
 
 /**
@@ -300,6 +311,8 @@ void RobotCMDTask()
     SubGetMessage(shoot_feed_sub, &shoot_fetch_data);
     SubGetMessage(gimbal_feed_sub, &gimbal_fetch_data);
 
+    DeterminRobotID();
+    
     // 根据gimbal的反馈值计算云台和底盘正方向的夹角,不需要传参,通过static私有变量完成
     CalcOffsetAngle();
     // 根据遥控器左侧开关,确定当前使用的控制模式为遥控器调试还是键鼠
