@@ -147,3 +147,12 @@ void RefereeSend(uint8_t *send, uint16_t tx_len)
 	USARTSend(referee_usart_instance, send, tx_len, USART_TRANSFER_DMA);
 	osDelay(115);
 }
+
+/**
+ * @brief 传递裁判系统数据地址
+ * @param
+ */
+referee_info_t *RefereePtr()
+{
+	return &referee_info;
+}

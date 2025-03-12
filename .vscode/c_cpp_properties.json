@@ -8,7 +8,10 @@
                 "${workspaceFolder}/bsp/usart",
                 "${workspaceFolder}/bsp/log",
                 "${workspaceFolder}/Inc",
-                "${workspaceFolder}/modules/cmd_vel"
+                "${workspaceFolder}/modules/cmd_vel",
+                "${workspaceFolder}/Middlewares/Third_Party/SEGGER/RTT",
+                "${workspaceFolder}/modules/referee",
+                "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc"
             ],
             "defines": [
                 "_DEBUG",

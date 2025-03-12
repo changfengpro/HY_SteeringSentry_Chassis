@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:35:00
  * @LastEditors:  
- * @LastEditTime: 2025-02-19 18:18:28
+ * @LastEditTime: 2025-03-13 03:54:09
  */
 #ifndef CMD_VEL_H
 #define CMD_VEL_H
@@ -15,6 +15,7 @@
 #include "daemon.h"
 #include "bsp_log.h"
 #include "usart.h"
+#include "rm_referee.h"
 
 #pragma pack(1)
 typedef struct 
