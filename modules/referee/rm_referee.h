@@ -97,4 +97,5 @@ referee_info_t *RefereeInit(UART_HandleTypeDef *referee_usart_handle);
  */
 void RefereeSend(uint8_t *send, uint16_t tx_len);
 
+referee_info_t *RefereePtr();
 #endif // !REFEREE_H

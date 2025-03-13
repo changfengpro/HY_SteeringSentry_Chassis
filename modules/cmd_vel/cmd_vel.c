@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:34:56
  * @LastEditors:  
- * @LastEditTime: 2025-02-12 13:29:15
+ * @LastEditTime: 2025-03-13 14:20:51
  */
 
 #include "cmd_vel.h"
@@ -14,12 +14,37 @@
 #define START_BYTE 0xAA
 #define END_BYTE 0x55
 #define CMD_VEL_CONTROL_FRAME_SIZE 27u  //导航接的buffer大小
+#define REFEREE_DATA_CONTROL_FRAME_SIZE sizeof(referee_info_t)
 
 static Radar_Data radar_ctrl;
 static uint8_t cmd_vel_init_flag;
+static referee_info_t *referee_data;
+static uint8_t referee_send_data[REFEREE_DATA_CONTROL_FRAME_SIZE + 12];
 
 static USARTInstance *cmd_vel_usart_instance;   //导航串口实例
 static DaemonInstance *cmd_vel_daemo_instance;  //导航守护进程实例
+
+/**
+ * @brief 转发裁判系统数据
+ * @return  
+ */
+static void RM_Referee_Send()
+{   
+    referee_send_data[0] = START_BYTE;
+    
+    memcpy(&referee_send_data[1], referee_data, sizeof(referee_info_t));
+
+    // 计算校验和
+    uint8_t checksum = 0;
+    for(int i = 0; i < 149; i++)
+    {
+        checksum ^= referee_send_data[i];
+    }
+    referee_send_data[149] = checksum;
+    referee_send_data[150] = END_BYTE;  
+
+    HAL_UART_Transmit_DMA(&huart1, referee_send_data, sizeof(referee_send_data));
+}
 
 /**
  * @brief cmd_vel数据包解析
@@ -61,7 +86,12 @@ static void Cmd_vel_Parse(const uint8_t *cmd_vel_buf)
     {
         LOGWARNING("[cmd_vel] Checksum error");
     }
+
+    RM_Referee_Send();
+
 }
+
+
 
 /**
  * @brief 导航数据解析回调函数
@@ -82,7 +112,7 @@ static void CmdVelLostCallback()
 {
     memset(&radar_ctrl, 0, sizeof(radar_ctrl)); //清空cmd_vel数据
     USARTServiceInit(cmd_vel_usart_instance);   //尝试重新启动
-
+    RM_Referee_Send();
     LOGWARNING("[Cmd_Vel] radar control lost");
     
 }
@@ -108,6 +138,8 @@ Radar_Data *CmdVelControlInit(UART_HandleTypeDef *cmd_vel_usart_handle)
     };
     cmd_vel_daemo_instance = DaemonRegister(&daemo_conf);
     cmd_vel_init_flag = 1;
+
+    referee_data = RefereePtr();
 
     return &radar_ctrl;
 }

@@ -99,9 +99,7 @@ static void CalcOffsetAngle()
 {   
     SubGetMessage(GimbalBase_sub, &yaw_single_angle);
     SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
-    // 别名angle提高可读性,不然太长了不好看,虽然基本不会动这个函数
-    // chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
-    
+    chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
 }
 
 static void DeterminRobotID()
@@ -316,7 +314,7 @@ void RobotCMDTask()
     SubGetMessage(gimbal_feed_sub, &gimbal_fetch_data);
 
     DeterminRobotID();
-
+    
     // 根据gimbal的反馈值计算云台和底盘正方向的夹角,不需要传参,通过static私有变量完成
     CalcOffsetAngle();
     // 根据遥控器左侧开关,确定当前使用的控制模式为遥控器调试还是键鼠

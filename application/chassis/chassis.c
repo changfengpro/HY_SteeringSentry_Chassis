@@ -348,7 +348,7 @@ void ChassisInit()
         }
     };
 
-    Motor_Init_Config_s DMmotor_Motor_Config = {
+Motor_Init_Config_s DMmotor_Motor_Config = {
     .controller_setting_init_config.angle_feedback_source = MOTOR_FEED,
     .controller_setting_init_config.close_loop_type = ANGLE_LOOP,
     .controller_setting_init_config.feedback_reverse_flag = FEEDBACK_DIRECTION_NORMAL,
@@ -521,7 +521,7 @@ static void Steer_Speed_Calcu(ChassisHandle_t *chassis_handle, float chassis_vx,
 static void Steer_angle_change(ChassisHandle_t *chassis_handle, float chassis_vx, float chassis_vy, float chassis_wz)
 {
     float theta = atan(1.0 / 1.0);  //返回45度
-    float steer_wz = chassis_wz * PI /180.0f;  //chassis_wz传入的是度/秒，转化为弧度制
+    float steer_wz = 15 * chassis_wz * PI /180.0f;  //chassis_wz传入的是度/秒，转化为弧度制(单位已经乱了，无力修改)
     float atan_angle[4];
 
     if((chassis_vx == 0) && (chassis_vy == 0) && (chassis_wz == 0))

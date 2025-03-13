@@ -137,7 +137,6 @@ void DMMotorTask(void const *argument)
     DMMotor_Send_s motor_send_mailbox;
     while (1)
     {   
-        
         pid_ref = motor->pid_ref;
 
         if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
@@ -173,7 +172,6 @@ void DMMotorTask(void const *argument)
 
             pid_ref = PIDCalculate(&motor->angle_PID, pid_measure, pid_ref);
         }
-        
 
         set = pid_ref;
 

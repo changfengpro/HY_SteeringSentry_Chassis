@@ -60,6 +60,8 @@
         "cmsis_os.h": "c",
         "cmd_vel.h": "c",
         "usart.h": "c",
-        "complex": "c"
+        "complex": "c",
+        "referee_protocol.h": "c",
+        "rm_referee.h": "c"
     }
 }

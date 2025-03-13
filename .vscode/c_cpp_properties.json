@@ -1,14 +1,17 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/modules/motor/DMmotor",
                 "${workspaceFolder}/bsp/usart",
                 "${workspaceFolder}/bsp/log",
                 "${workspaceFolder}/Inc",
-                "${workspaceFolder}/modules/cmd_vel"
+                "${workspaceFolder}/modules/cmd_vel",
+                "${workspaceFolder}/Middlewares/Third_Party/SEGGER/RTT",
+                "${workspaceFolder}/modules/referee",
+                "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc"
             ],
             "defines": [
                 "_DEBUG",
@@ -17,7 +20,7 @@
             ],
             "cStandard": "c17",
             "cppStandard": "gnu++14",
-            "intelliSenseMode": "windows-gcc-x86",
+            "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
