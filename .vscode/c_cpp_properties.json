@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/modules/motor/DMmotor",
@@ -20,7 +20,7 @@
             ],
             "cStandard": "c17",
             "cppStandard": "gnu++14",
-            "intelliSenseMode": "windows-gcc-x86",
+            "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],

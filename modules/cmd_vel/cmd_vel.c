@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:34:56
  * @LastEditors:  
- * @LastEditTime: 2025-03-13 06:30:30
+ * @LastEditTime: 2025-03-13 14:20:51
  */
 
 #include "cmd_vel.h"
@@ -112,7 +112,7 @@ static void CmdVelLostCallback()
 {
     memset(&radar_ctrl, 0, sizeof(radar_ctrl)); //清空cmd_vel数据
     USARTServiceInit(cmd_vel_usart_instance);   //尝试重新启动
-
+    RM_Referee_Send();
     LOGWARNING("[Cmd_Vel] radar control lost");
     
 }
