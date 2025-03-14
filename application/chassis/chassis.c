@@ -245,8 +245,8 @@ void ChassisInit()
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
 
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         }              
@@ -275,8 +275,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -305,8 +305,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -335,8 +335,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -679,8 +679,8 @@ void ChassisTask()
     static float sin_theta, cos_theta;
     cos_theta = arm_cos_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
     sin_theta = arm_sin_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
-    chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
-    chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+    chassis_handle.vy = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
+    chassis_handle.vx = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
     chassis_handle.wz = chassis_cmd_recv.wz;
     chassis_handle.gimbal_angle = chassis_cmd_recv.gimbal_angle;
     // ChassisHandle_Deliver_Config();
