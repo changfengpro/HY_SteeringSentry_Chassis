@@ -17,6 +17,7 @@
 #define REFEREE_DATA_CONTROL_FRAME_SIZE sizeof(referee_info_t)
 #define INS_SIZE sizeof(attitude_t)
 
+
 static Radar_Data radar_ctrl;
 static uint8_t cmd_vel_init_flag;
 static referee_info_t *referee_data;
@@ -158,6 +159,10 @@ uint8_t CmdVelControlIsOnline()
     return 0;
 }
 
+attitude_t *gimbal_IMU_data_ptr(void)
+{
+    return &gimbal_IMU_recv_data;
+}
 
 
 

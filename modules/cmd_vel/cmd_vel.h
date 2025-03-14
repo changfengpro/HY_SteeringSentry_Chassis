@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-02-01 20:35:00
  * @LastEditors:  
- * @LastEditTime: 2025-03-13 03:54:09
+ * @LastEditTime: 2025-03-14 23:26:02
  */
 #ifndef CMD_VEL_H
 #define CMD_VEL_H
@@ -59,5 +59,7 @@ Radar_Data *CmdVelControlInit(UART_HandleTypeDef *cmd_vel_uasrt_handle);
  * @return 
  */
 uint8_t CmdVelControlIsOnline();
+
+attitude_t *gimbal_IMU_data_ptr(void);
 
 #endif  

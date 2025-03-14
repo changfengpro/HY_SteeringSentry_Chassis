@@ -5,7 +5,7 @@
  * @version: 
  * @Date: 2025-03-08 20:16:25
  * @LastEditors:  
- * @LastEditTime: 2025-03-09 13:52:32
+ * @LastEditTime: 2025-03-15 00:31:28
  */
 /**
  * @file chassis.c
@@ -31,6 +31,7 @@
 #include "bsp_dwt.h"
 #include "referee_UI.h"
 #include "arm_math.h"
+#include "cmd_vel.h"
 
 /* 根据robot_def.h中的macro自动计算的参数 */
 #define WHEEL_LINE_RATION (1 / (180.0f * REDUCTION_RATIO_WHEEL)) * PI * RADIUS_WHEEL   //将舵轮电机转速转换为底盘线速度的比例
@@ -49,6 +50,7 @@ static Publisher_t *chassis_pub;                    // 用于发布底盘的数�
 static Subscriber_t *chassis_sub;                   // 用于订阅底盘的控制命令
 static Publisher_t *GimbalBase_Pub;                 //用于订阅母云台的数据
 attitude_t *Chassis_IMU_data;
+attitude_t *gimbal_imu_recv_data;
 #endif                                              // !ONE_BOARD
 
 static Chassis_Ctrl_Cmd_s chassis_cmd_recv;         // 底盘接收到的控制命令
@@ -70,7 +72,7 @@ static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算�
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
 float Init_angle[4] = { 1.0f , 110.0f , 13.0f , 0.0f };
-static float Yaw_single_angle, Yaw_angle_sum;
+static float Yaw_single_angle, Yaw_angle_sum, YawTotalAngle;
 
 
 /* 私有函数 */
@@ -92,6 +94,8 @@ void ChassisInit()
 {
     Chassis_IMU_data = INS_Init(); // 底盘IMU初始化
     float gimbal_base_angle_feed_ptr = Chassis_IMU_data->YawTotalAngle;
+    gimbal_imu_recv_data = gimbal_IMU_data_ptr();
+
 
     Motor_Init_Config_s chassis_first_GM6020_motor_config =       //first表示第一象限， second表示第二象限，以此类推
     {
@@ -250,8 +254,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         }              
@@ -280,8 +284,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -310,8 +314,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -340,8 +344,8 @@ void ChassisInit()
                                                         .DeadBand = 0,
                                                         .MaxOut = 20000,
                                                         .IntegralLimit = 3000,
-                                                        .slope = {.decrease_value = 50,
-                                                                  .increase_value = 50,
+                                                        .slope = {.decrease_value = 25,
+                                                                  .increase_value = 25,
                                                                   .slope_first = SLOPE_FIRST_REAL
                                                                  }
                                                         },
@@ -619,7 +623,9 @@ static void YawAngleCalculate()
 void ChassisTask()
 {   
     chassis_feedback_data.chassis_imu_data = Chassis_IMU_data;
-    YawAngleCalculate();    //yaw电机总角度计算
+    YawTotalAngle = gimbal_imu_recv_data->YawTotalAngle;
+    // YawAngleCalculate();    //yaw电机总角度计算
+
     // 后续增加没收到消息的处理(双板的情况)
     // 获取新的控制信息
 #ifdef ONE_BOARD
@@ -667,7 +673,7 @@ void ChassisTask()
         // chassis_cmd_recv.wz = -1.5f * chassis_cmd_recv.offset_angle * abs(chassis_cmd_recv.offset_angle);
         break;
     case CHASSIS_ROTATE: // 自旋,同时保持全向机动;当前wz维持定值,后续增加不规则的变速策略
-        chassis_cmd_recv.wz = 8000;
+        chassis_cmd_recv.wz = 4000;
         break;
     case CHASSIS_RADAR: //  导航模式
         break;
@@ -681,8 +687,8 @@ void ChassisTask()
     static float sin_theta, cos_theta;
     cos_theta = arm_cos_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
     sin_theta = arm_sin_f32(chassis_cmd_recv.offset_angle * DEGREE_2_RAD);
-    chassis_handle.vx = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
-    chassis_handle.vy = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
+    chassis_handle.vy = chassis_cmd_recv.vx * cos_theta - chassis_cmd_recv.vy * sin_theta;
+    chassis_handle.vx = chassis_cmd_recv.vx * sin_theta + chassis_cmd_recv.vy * cos_theta;
     chassis_handle.wz = chassis_cmd_recv.wz;
     chassis_handle.gimbal_angle = chassis_cmd_recv.gimbal_angle;
     // ChassisHandle_Deliver_Config();
@@ -708,7 +714,7 @@ void ChassisTask()
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
-    PubPushMessage(GimbalBase_Pub, (void *)&Yaw_single_angle);
+    PubPushMessage(GimbalBase_Pub, (void *)&YawTotalAngle);
 #endif
 #ifdef CHASSIS_BOARD
     CANCommSend(chasiss_can_comm, (void *)&chassis_feedback_data);
