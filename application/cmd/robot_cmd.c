@@ -53,7 +53,7 @@ static Shoot_Upload_Data_s shoot_fetch_data; // 从发射获取的反馈信息
 static Robot_Status_e robot_state; // 机器人整体工作状态
 
 // static float Yaw_angle, yaw_single_angle;
-static float yaw_single_angle;
+static float yaw_total_angle;
 
 BMI088Instance *bmi088_test; // 云台IMU
 BMI088_Data_t bmi088_data;
@@ -97,9 +97,9 @@ void RobotCMDInit()
  */
 static void CalcOffsetAngle()
 {   
-    SubGetMessage(GimbalBase_sub, &yaw_single_angle);
+    SubGetMessage(GimbalBase_sub, &yaw_total_angle);
     SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
-    chassis_cmd_send.offset_angle = yaw_single_angle - chassis_fetch_data.chassis_imu_data->Yaw;
+    chassis_cmd_send.offset_angle = yaw_total_angle - chassis_fetch_data.chassis_imu_data->Yaw;
 }
 
 static void DeterminRobotID()

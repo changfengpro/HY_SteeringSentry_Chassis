@@ -60,4 +60,6 @@ Radar_Data *CmdVelControlInit(UART_HandleTypeDef *cmd_vel_uasrt_handle);
  */
 uint8_t CmdVelControlIsOnline();
 
+attitude_t *gimbal_IMU_data_ptr(void);
+
 #endif  
