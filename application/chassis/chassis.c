@@ -63,7 +63,7 @@ static float vt_lf, vt_rf, vt_lb, vt_rb;                  // 底盘速度解算�
 static float CHASSIS_6020_1_Y_ANGLE, CHASSIS_6020_2_Y_ANGLE, CHASSIS_6020_3_Y_ANGLE, CHASSIS_6020_4_Y_ANGLE;
 // static attitude_t *chassis_IMU_data; // 底盘IMU数据
 float Init_angle[4] = { 1.0f , 110.0f , 13.0f , 0.0f };
-static float Yaw_single_angle, Yaw_angle_sum, YawTotalAngle;
+static float Yaw_single_angle, Yaw_angle_sum, YawAngle;
 
 
 /* 私有函数 */
@@ -438,7 +438,7 @@ static void LimitChassisOutput()
     DJIMotorSetRef(First_M3508_motor, chassis_handle.motor_set_speed[0]);
     DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
     DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
-    DJIMotorSetRef(Fourth_M3508_motor, -chassis_handle.motor_set_speed[3]);
+    DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
     DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_angle);
     
 }
@@ -615,7 +615,7 @@ static void YawAngleCalculate()
 void ChassisTask()
 {   
     chassis_feedback_data.chassis_imu_data = Chassis_IMU_data;
-    YawTotalAngle = gimbal_imu_recv_data->YawTotalAngle;
+    YawAngle = gimbal_imu_recv_data->Yaw;
     // YawAngleCalculate();    //yaw电机总角度计算
 
     // 后续增加没收到消息的处理(双板的情况)
@@ -706,7 +706,7 @@ void ChassisTask()
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
-    PubPushMessage(GimbalBase_Pub, (void *)&YawTotalAngle);
+    PubPushMessage(GimbalBase_Pub, (void *)&YawAngle);
 #endif
 #ifdef CHASSIS_BOARD
     CANCommSend(chasiss_can_comm, (void *)&chassis_feedback_data);
