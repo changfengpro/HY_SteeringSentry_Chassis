@@ -438,7 +438,7 @@ static void LimitChassisOutput()
     DJIMotorSetRef(First_M3508_motor, chassis_handle.motor_set_speed[0]);
     DJIMotorSetRef(Second_M3508_motor, chassis_handle.motor_set_speed[1]);
     DJIMotorSetRef(Third_M3508_motor, chassis_handle.motor_set_speed[2]);
-    DJIMotorSetRef(Fourth_M3508_motor, -chassis_handle.motor_set_speed[3]);
+    DJIMotorSetRef(Fourth_M3508_motor, chassis_handle.motor_set_speed[3]);
     DMMotorSetRef(Gimbal_Base, chassis_handle.gimbal_angle);
     
 }
