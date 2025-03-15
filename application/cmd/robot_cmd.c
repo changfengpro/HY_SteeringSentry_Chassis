@@ -99,7 +99,8 @@ static void CalcOffsetAngle()
 {   
     SubGetMessage(GimbalBase_sub, &yaw_total_angle);
     SubGetMessage(chassis_feed_sub, &chassis_fetch_data);
-    chassis_cmd_send.offset_angle = yaw_total_angle - chassis_fetch_data.chassis_imu_data->Yaw;
+    // chassis_cmd_send.offset_angle = yaw_total_angle - chassis_fetch_data.chassis_imu_data->Yaw;
+    chassis_cmd_send.offset_angle = 0;
 }
 
 static void DeterminRobotID()
@@ -118,8 +119,8 @@ static void DeterminRobotID()
 static void RadarControlSet()
 {    
     chassis_cmd_send.chassis_mode = CHASSIS_RADAR;
-    chassis_cmd_send.vx = (float)radar_data->linear.x * 50;  
-    chassis_cmd_send.vy = -(float)radar_data->linear.y * 50;
+    chassis_cmd_send.vy = (float)radar_data->linear.x * 50;  
+    chassis_cmd_send.vx = (float)radar_data->linear.y * 50;
     chassis_cmd_send.wz = (float)radar_data->angular.z * 5000; 
 }
 
